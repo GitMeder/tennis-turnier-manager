@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Tennis Turnier Manager</title>
+<style>
+  :root {
+    --accent: #2d6cdf;
+    --bg: #f6f8fb;
+    --border: #c7d2e2;
+    --text: #1b2a4b;
+  }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 1.5rem 2rem;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+  }
+
+  main {
+    padding: 2rem;
+    display: grid;
+    gap: 2rem;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  section {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 20px rgba(28, 44, 90, 0.08);
+  }
+
+  h2 {
+    margin-top: 0;
+    font-size: 1.3rem;
+  }
+
+  button {
+    cursor: pointer;
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  button.secondary {
+    background: #fff;
+    color: var(--accent);
+  }
+
+  button.small {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.9rem;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  button:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(28, 44, 90, 0.2);
+  }
+
+  form.player-form {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  form.player-form input {
+    flex: 1;
+    min-width: 220px;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  ul.player-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  ul.player-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fdfefe;
+  }
+
+  ul.player-list li span.label {
+    font-weight: 600;
+  }
+
+  .mode-toggle {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+  }
+
+  .mode-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .mode-toggle input[type="radio"] {
+    accent-color: var(--accent);
+  }
+
+  .mode-toggle label.active {
+    border-color: var(--accent);
+    background: rgba(45, 108, 223, 0.1);
+  }
+
+  .mode-toggle label.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(45, 108, 223, 0.1);
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .matches {
+    display: grid;
+    gap: 1rem;
+  }
+
+  fieldset.match {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  fieldset.match legend {
+    font-weight: 600;
+  }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .option input[type="radio"] {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .score-input {
+    margin-top: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .score-input input {
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .status {
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .history {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .history-round {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    background: #fdfefe;
+  }
+
+  .timer {
+    margin-top: 0.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .timer-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .timer-display {
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 1.1rem;
+    min-width: 9ch;
+  }
+
+  .bye {
+    font-style: italic;
+    color: #556;
+  }
+
+  @media (max-width: 700px) {
+    main {
+      padding: 1rem;
+    }
+
+    section {
+      padding: 1rem;
+    }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Tennis Turnier Manager</h1>
+    <p>Erstelle zufällige Einzel- oder Doppelrunden, erfasse Ergebnisse und finde den Champion.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Spieler hinzufügen</h2>
+      <form class="player-form" id="playerForm">
+        <input id="playerInput" type="text" placeholder="Name des Spielers" autocomplete="off" required>
+        <button type="submit">Hinzufügen</button>
+      </form>
+      <ul class="player-list" id="playerList"></ul>
+    </section>
+
+    <section>
+      <h2>Rundenverwaltung</h2>
+      <p class="status" id="roundStatus">Aktuelle Teilnehmer: 0</p>
+      <div class="mode-toggle" id="modeToggle">
+        <label class="active">
+          <input type="radio" name="mode" value="singles" checked>
+          Einzel
+        </label>
+        <label>
+          <input type="radio" name="mode" value="doubles">
+          Doppel
+        </label>
+      </div>
+      <div style="display: flex; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 1.2rem;">
+        <button id="startRoundBtn">Neue Runde starten</button>
+        <button id="resetBtn" class="secondary">Turnier zurücksetzen</button>
+      </div>
+      <div id="byeInfo"></div>
+      <form id="matchesForm">
+        <div class="matches" id="matchesContainer"></div>
+        <div style="margin-top: 1.2rem; display: none;" id="submitWrapper">
+          <button type="submit">Ergebnisse übernehmen</button>
+        </div>
+      </form>
+      <div id="champion"></div>
+    </section>
+
+    <section>
+      <h2>Historie</h2>
+      <div class="history" id="history"></div>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      participants: [],
+      currentRound: 0,
+      matches: [],
+      bye: [],
+      history: [],
+      mode: 'singles'
+    };
+
+    let nextId = 1;
+
+    const playerForm = document.getElementById('playerForm');
+    const playerInput = document.getElementById('playerInput');
+    const playerList = document.getElementById('playerList');
+    const startRoundBtn = document.getElementById('startRoundBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const roundStatus = document.getElementById('roundStatus');
+    const modeToggle = document.getElementById('modeToggle');
+    const matchesForm = document.getElementById('matchesForm');
+    const matchesContainer = document.getElementById('matchesContainer');
+    const submitWrapper = document.getElementById('submitWrapper');
+    const historyContainer = document.getElementById('history');
+    const byeInfo = document.getElementById('byeInfo');
+    const champion = document.getElementById('champion');
+    const modeInputs = modeToggle.querySelectorAll('input[name="mode"]');
+    const matchTimers = new Map();
+
+    const applyModeState = () => {
+      modeInputs.forEach((input) => {
+        if (input.value === 'doubles') {
+          const disableDoubles = state.participants.length < 4;
+          input.disabled = disableDoubles;
+          if (disableDoubles && state.mode === 'doubles') {
+            state.mode = 'singles';
+          }
+        }
+        input.checked = input.value === state.mode;
+        const label = input.parentElement;
+        label.classList.toggle('active', input.checked);
+        label.classList.toggle('disabled', input.disabled);
+      });
+    };
+
+    modeInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        if (input.disabled) {
+          return;
+        }
+        state.mode = input.value;
+        applyModeState();
+        updateStatus();
+      });
+    });
+
+    const ensureTimer = (matchId) => {
+      if (!matchTimers.has(matchId)) {
+        matchTimers.set(matchId, {
+          elapsed: 0,
+          running: false,
+          lastStart: null,
+          intervalId: null
+        });
+      }
+      return matchTimers.get(matchId);
+    };
+
+    const formatTime = (ms) => {
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+      const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+      const millis = Math.floor(ms % 1000).toString().padStart(3, '0');
+      return `${minutes}:${seconds}.${millis}`;
+    };
+
+    const updateTimerDisplay = (matchId) => {
+      const timer = matchTimers.get(matchId);
+      if (!timer) {
+        return;
+      }
+      let total = timer.elapsed;
+      if (timer.running && timer.lastStart !== null) {
+        total += Date.now() - timer.lastStart;
+      }
+
+      const display = document.getElementById(`timer-display-${matchId}`);
+      if (display) {
+        display.textContent = formatTime(total);
+      }
+
+      const startBtn = document.getElementById(`timer-start-${matchId}`);
+      const stopBtn = document.getElementById(`timer-stop-${matchId}`);
+      const hasTime = total > 0;
+
+      if (startBtn) {
+        const label = !timer.running && hasTime ? 'Weiter' : 'Start';
+        startBtn.textContent = label;
+        startBtn.disabled = timer.running;
+      }
+      if (stopBtn) {
+        const canStop = timer.running || hasTime;
+        stopBtn.disabled = !canStop;
+      }
+    };
+
+    const startTimer = (matchId) => {
+      const timer = ensureTimer(matchId);
+      if (timer.running) {
+        return;
+      }
+      timer.running = true;
+      timer.lastStart = Date.now();
+      if (timer.intervalId) {
+        clearInterval(timer.intervalId);
+      }
+      timer.intervalId = setInterval(() => updateTimerDisplay(matchId), 50);
+      updateTimerDisplay(matchId);
+    };
+
+    const stopTimer = (matchId) => {
+      const timer = matchTimers.get(matchId);
+      if (!timer) {
+        return;
+      }
+      if (timer.running) {
+        timer.elapsed += Date.now() - timer.lastStart;
+        timer.running = false;
+        timer.lastStart = null;
+      } else {
+        timer.elapsed = 0;
+      }
+      if (timer.intervalId) {
+        clearInterval(timer.intervalId);
+        timer.intervalId = null;
+      }
+      updateTimerDisplay(matchId);
+    };
+
+    const clearTimer = (matchId) => {
+      const timer = matchTimers.get(matchId);
+      if (!timer) {
+        return;
+      }
+      if (timer.intervalId) {
+        clearInterval(timer.intervalId);
+        timer.intervalId = null;
+      }
+      matchTimers.delete(matchId);
+    };
+
+    const clearAllTimers = () => {
+      Array.from(matchTimers.keys()).forEach((id) => clearTimer(id));
+    };
+
+    const createParticipant = (label, members = null) => ({
+      id: nextId++,
+      label,
+      members: members || [label],
+      type: members && members.length > 1 ? 'team' : 'player'
+    });
+
+    const shuffle = (array) => {
+      for (let i = array.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    };
+
+    const renderParticipants = () => {
+      playerList.innerHTML = '';
+      if (!state.participants.length) {
+        const li = document.createElement('li');
+        li.textContent = 'Noch keine Spieler hinzugefügt.';
+        playerList.appendChild(li);
+        return;
+      }
+
+      state.participants.forEach((participant) => {
+        const li = document.createElement('li');
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = participant.label;
+        li.appendChild(label);
+
+        const info = document.createElement('span');
+        info.className = 'tag';
+        info.textContent = participant.members.length > 1 ? 'Team' : 'Spieler';
+        li.appendChild(info);
+
+        if (participant.type === 'player' && !state.currentRound) {
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'secondary';
+          removeBtn.style.marginLeft = '0.8rem';
+          removeBtn.textContent = 'Entfernen';
+          removeBtn.addEventListener('click', () => removeParticipant(participant.id));
+          li.appendChild(removeBtn);
+        }
+
+        playerList.appendChild(li);
+      });
+    };
+
+    const updateStatus = () => {
+      applyModeState();
+      const modeLabel = state.mode === 'singles' ? 'Einzel' : 'Doppel';
+      roundStatus.textContent = `Aktuelle Teilnehmer: ${state.participants.length} – Modus: ${modeLabel}`;
+      const required = state.mode === 'doubles' ? 4 : 2;
+      const hasEnoughParticipants = state.participants.length >= required;
+      startRoundBtn.disabled = state.matches.length > 0 || !hasEnoughParticipants;
+    };
+
+    const renderMatches = () => {
+      matchesContainer.innerHTML = '';
+      submitWrapper.style.display = state.matches.length ? 'block' : 'none';
+      if (state.bye.length) {
+        const names = state.bye.map((participant) => participant.label).join(', ');
+        byeInfo.innerHTML = `<p><strong>Freilose:</strong> ${names} rücken automatisch in die nächste Runde vor.</p>`;
+      } else {
+        byeInfo.innerHTML = '';
+      }
+
+      state.matches.forEach((match, index) => {
+        const fieldset = document.createElement('fieldset');
+        fieldset.className = 'match';
+        const legend = document.createElement('legend');
+        legend.textContent = `Match ${index + 1} – ${match.type === 'doubles' ? 'Doppel' : 'Einzel'}`;
+        fieldset.appendChild(legend);
+
+        match.options.forEach((option, optionIndex) => {
+          const label = document.createElement('label');
+          label.className = 'option';
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = `match-${match.id}`;
+          radio.value = optionIndex;
+          label.appendChild(radio);
+
+          const text = document.createElement('span');
+          text.textContent = option.label;
+          label.appendChild(text);
+
+          fieldset.appendChild(label);
+        });
+
+        ensureTimer(match.id);
+
+        const timerWrapper = document.createElement('div');
+        timerWrapper.className = 'timer';
+
+        const timerLabel = document.createElement('span');
+        timerLabel.textContent = 'Spielzeit:';
+        timerWrapper.appendChild(timerLabel);
+
+        const timerDisplay = document.createElement('span');
+        timerDisplay.className = 'timer-display';
+        timerDisplay.id = `timer-display-${match.id}`;
+        timerWrapper.appendChild(timerDisplay);
+
+        const timerControls = document.createElement('div');
+        timerControls.className = 'timer-controls';
+
+        const startBtn = document.createElement('button');
+        startBtn.type = 'button';
+        startBtn.className = 'small';
+        startBtn.id = `timer-start-${match.id}`;
+        startBtn.textContent = 'Start';
+        startBtn.addEventListener('click', () => startTimer(match.id));
+        timerControls.appendChild(startBtn);
+
+        const stopBtn = document.createElement('button');
+        stopBtn.type = 'button';
+        stopBtn.className = 'small secondary';
+        stopBtn.id = `timer-stop-${match.id}`;
+        stopBtn.textContent = 'Stop';
+        stopBtn.addEventListener('click', () => stopTimer(match.id));
+        timerControls.appendChild(stopBtn);
+
+        timerWrapper.appendChild(timerControls);
+        fieldset.appendChild(timerWrapper);
+
+        const scoreWrapper = document.createElement('div');
+        scoreWrapper.className = 'score-input';
+        const scoreLabel = document.createElement('label');
+        scoreLabel.textContent = 'Ergebnis (z. B. 6:4, 4:6, 10:8)';
+        const scoreInput = document.createElement('input');
+        scoreInput.type = 'text';
+        scoreInput.name = `score-${match.id}`;
+        scoreWrapper.appendChild(scoreLabel);
+        scoreWrapper.appendChild(scoreInput);
+        fieldset.appendChild(scoreWrapper);
+
+        matchesContainer.appendChild(fieldset);
+        updateTimerDisplay(match.id);
+      });
+    };
+
+    const renderHistory = () => {
+      historyContainer.innerHTML = '';
+      if (!state.history.length) {
+        const empty = document.createElement('p');
+        empty.textContent = 'Noch keine Runden gespielt.';
+        historyContainer.appendChild(empty);
+        return;
+      }
+
+      state.history.forEach((round) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'history-round';
+        const title = document.createElement('h3');
+        title.textContent = `Runde ${round.number}`;
+        wrapper.appendChild(title);
+
+        round.matches.forEach((match, index) => {
+          const p = document.createElement('p');
+          const vs = match.type === 'doubles' ? 'vs.' : 'gegen';
+          const contestants = match.type === 'doubles'
+            ? `${match.teams[0]} ${vs} ${match.teams[1]}`
+            : `${match.players[0]} ${vs} ${match.players[1]}`;
+          const scoreText = match.score ? ` – Ergebnis: ${match.score}` : '';
+          p.innerHTML = `<strong>Match ${index + 1}:</strong> ${contestants}<br><span class="tag">Sieger: ${match.winner}</span>${scoreText}`;
+          wrapper.appendChild(p);
+        });
+
+        if (round.byes && round.byes.length) {
+          const bye = document.createElement('p');
+          bye.className = 'bye';
+          bye.textContent = `${round.byes.join(', ')} ${round.byes.length === 1 ? 'war' : 'waren'} in dieser Runde spielfrei.`;
+          wrapper.appendChild(bye);
+        }
+
+        historyContainer.appendChild(wrapper);
+      });
+    };
+
+    const renderChampion = () => {
+      if (state.participants.length === 1 && !state.matches.length && state.currentRound > 0) {
+        const winner = state.participants[0];
+        champion.innerHTML = `
+          <h3>Champion</h3>
+          <p><strong>${winner.label}</strong> gewinnt das Turnier!</p>
+        `;
+      } else {
+        champion.innerHTML = '';
+      }
+    };
+
+    const removeParticipant = (id) => {
+      state.participants = state.participants.filter((participant) => participant.id !== id);
+      renderParticipants();
+      updateStatus();
+    };
+
+    const resetTournament = () => {
+      state.participants = [];
+      state.currentRound = 0;
+      state.matches = [];
+      state.bye = [];
+      state.history = [];
+      state.mode = 'singles';
+      nextId = 1;
+      clearAllTimers();
+      matchesContainer.innerHTML = '';
+      submitWrapper.style.display = 'none';
+      byeInfo.innerHTML = '';
+      champion.innerHTML = '';
+      applyModeState();
+      renderParticipants();
+      updateStatus();
+      renderHistory();
+    };
+
+    const createMatchOptions = (participants) => {
+      const options = [];
+      const teams = [];
+      for (let i = 0; i < participants.length; i += 2) {
+        const teamMembers = [participants[i], participants[i + 1]];
+        options.push({
+          label: `${teamMembers[0].label} & ${teamMembers[1].label}`,
+          members: [...teamMembers[0].members, ...teamMembers[1].members]
+        });
+        teams.push(`${teamMembers[0].label} & ${teamMembers[1].label}`);
+      }
+      return { options, teams };
+    };
+
+    const startRound = () => {
+      if (state.matches.length) {
+        alert('Bitte beende zuerst die aktuelle Runde.');
+        return;
+      }
+
+      const mode = state.mode;
+      const minimum = mode === 'doubles' ? 4 : 2;
+      if (state.participants.length < minimum) {
+        alert(mode === 'doubles'
+          ? 'Für eine Doppelrunde werden mindestens vier Spieler benötigt.'
+          : 'Mindestens zwei Teilnehmer werden benötigt.');
+        return;
+      }
+
+      clearAllTimers();
+
+      const pool = state.participants.map((participant) => ({
+        ...participant,
+        members: [...participant.members]
+      }));
+      shuffle(pool);
+
+      const matches = [];
+      const byeList = [];
+
+      if (mode === 'singles') {
+        if (pool.length % 2 === 1) {
+          byeList.push(pool.pop());
+        }
+        while (pool.length >= 2) {
+          const p1 = pool.pop();
+          const p2 = pool.pop();
+          matches.push({
+            id: `${state.currentRound + 1}-${matches.length + 1}`,
+            type: 'singles',
+            options: [
+              { label: p1.label, members: [...p1.members] },
+              { label: p2.label, members: [...p2.members] }
+            ],
+            detail: { players: [p1.label, p2.label] }
+          });
+        }
+      } else {
+        const remainder = pool.length % 4;
+        if (remainder) {
+          byeList.push(...pool.splice(-remainder));
+        }
+        while (pool.length >= 4) {
+          const quartet = pool.splice(-4);
+          const { options, teams } = createMatchOptions(quartet);
+          matches.push({
+            id: `${state.currentRound + 1}-${matches.length + 1}`,
+            type: 'doubles',
+            options,
+            detail: { teams }
+          });
+        }
+      }
+
+      if (!matches.length) {
+        alert('Es konnten keine Spiele für diese Runde erstellt werden.');
+        return;
+      }
+
+      state.currentRound += 1;
+      state.matches = matches;
+      state.bye = byeList;
+      renderMatches();
+      updateStatus();
+    };
+
+    const processResults = (event) => {
+      event.preventDefault();
+      if (!state.matches.length) {
+        return;
+      }
+
+      const winners = [];
+      const roundSummary = {
+        number: state.currentRound,
+        matches: [],
+        byes: state.bye.map((participant) => participant.label)
+      };
+
+      for (const match of state.matches) {
+        const choice = matchesForm.querySelector(`input[name="match-${match.id}"]:checked`);
+        if (!choice) {
+          alert('Bitte wähle für jedes Match einen Sieger aus.');
+          return;
+        }
+        const winnerIndex = Number(choice.value);
+        const winnerOption = match.options[winnerIndex];
+        const scoreInput = matchesForm.querySelector(`input[name="score-${match.id}"]`);
+        const score = scoreInput.value.trim();
+
+        if (match.type === 'doubles') {
+          roundSummary.matches.push({
+            type: 'doubles',
+            teams: match.detail.teams,
+            winner: winnerOption.label,
+            score
+          });
+          winnerOption.members.forEach((memberName) => {
+            winners.push(createParticipant(memberName, [memberName]));
+          });
+        } else {
+          roundSummary.matches.push({
+            type: 'singles',
+            players: match.detail.players,
+            winner: winnerOption.label,
+            score
+          });
+          winners.push(createParticipant(winnerOption.label, [...winnerOption.members]));
+        }
+
+      }
+
+      if (state.bye.length) {
+        winners.push(...state.bye);
+      }
+
+      state.history.push(roundSummary);
+      state.participants = winners;
+      state.matches = [];
+      state.bye = [];
+      clearAllTimers();
+      matchesContainer.innerHTML = '';
+      submitWrapper.style.display = 'none';
+      byeInfo.innerHTML = '';
+
+      renderParticipants();
+      updateStatus();
+      renderHistory();
+      renderChampion();
+    };
+
+    playerForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = playerInput.value.trim();
+      if (!name) {
+        return;
+      }
+      state.participants.push(createParticipant(name));
+      playerInput.value = '';
+      renderParticipants();
+      updateStatus();
+    });
+
+    startRoundBtn.addEventListener('click', startRound);
+    matchesForm.addEventListener('submit', processResults);
+    resetBtn.addEventListener('click', () => {
+      if (confirm('Turnier wirklich zurücksetzen?')) {
+        resetTournament();
+      }
+    });
+
+    renderParticipants();
+    updateStatus();
+    renderHistory();
+  </script>
+</body>
+</html>
