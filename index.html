@@ -552,6 +552,7 @@
   </main>
 
   <script>
+    const CACHE_KEY = 'tennis-tournament-cache-v1';
     const state = {
       players: [],
       nextId: 1,
@@ -597,6 +598,78 @@
       if (!seededId || !unseededId) return;
       const key = getPairKey(seededId, unseededId);
       target.set(key, (target.get(key) || 0) + 1);
+    };
+
+    const showStatus = (message) => {
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.position = 'fixed';
+      toast.style.bottom = '1.2rem';
+      toast.style.right = '1.2rem';
+      toast.style.padding = '0.6rem 1rem';
+      toast.style.background = 'rgba(37, 99, 235, 0.95)';
+      toast.style.color = '#fff';
+      toast.style.borderRadius = '12px';
+      toast.style.boxShadow = '0 20px 45px -20px rgba(15, 23, 42, 0.45)';
+      toast.style.zIndex = '999';
+      toast.style.fontSize = '0.95rem';
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 200ms ease';
+      document.body.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+      });
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+      }, 1500);
+    };
+
+    const serializeState = () => ({
+      players: state.players,
+      nextId: state.nextId,
+      currentRound: state.currentRound,
+      history: state.history,
+      pairCounts: Array.from(state.pairCounts.entries())
+    });
+
+    const hydrateState = (data) => {
+      state.players = data.players || [];
+      state.nextId = data.nextId || 1;
+      state.currentRound = data.currentRound || null;
+      state.history = data.history || [];
+      state.pairCounts = new Map(data.pairCounts || []);
+    };
+
+    const saveToCache = (silent = false) => {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(serializeState()));
+        if (!silent) showStatus('💾 Daten gespeichert');
+      } catch (error) {
+        console.error('Cache speichern fehlgeschlagen:', error);
+      }
+    };
+
+    const loadFromCache = () => {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        hydrateState(parsed);
+        showStatus('✅ Daten wiederhergestellt');
+        return true;
+      } catch (error) {
+        console.error('Cache laden fehlgeschlagen:', error);
+        return false;
+      }
+    };
+
+    const clearCache = () => {
+      try {
+        localStorage.removeItem(CACHE_KEY);
+      } catch (error) {
+        console.error('Cache löschen fehlgeschlagen:', error);
+      }
     };
 
     const createPlayer = (name, seeded) => ({
@@ -653,6 +726,7 @@
             renderPlayers();
             updateControls();
             renderStandings();
+            saveToCache(true);
           });
           li.appendChild(removeBtn);
         }
@@ -912,6 +986,7 @@
 
       renderMatches();
       updateControls();
+      saveToCache();
     };
 
     const applyResult = (player, outcome) => {
@@ -1000,6 +1075,7 @@
       renderStandings();
       renderHistory();
       updateControls();
+      saveToCache();
     };
 
     const resetTournament = () => {
@@ -1017,6 +1093,8 @@
       renderStandings();
       renderHistory();
       updateControls();
+      clearCache();
+      showStatus('🧹 Turnier zurückgesetzt');
     };
 
     playerForm.addEventListener('submit', (event) => {
@@ -1031,14 +1109,21 @@
       renderPlayers();
       renderStandings();
       updateControls();
+      saveToCache();
     });
 
     generateRoundBtn.addEventListener('click', generateRound);
     matchesForm.addEventListener('submit', processResults);
     resetBtn.addEventListener('click', resetTournament);
 
+    const restored = loadFromCache();
+    if (restored) {
+      state.pairCounts = new Map(state.pairCounts);
+    }
+
     renderPlayers();
     updateControls();
+    renderMatches();
     renderStandings();
     renderHistory();
   </script>
