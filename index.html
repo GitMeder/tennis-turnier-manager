@@ -1,73 +1,58 @@
 <!DOCTYPE html>
 <html lang="de">
-
 <head>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0C6CF2" charset="UTF-8">
-  <link rel="icon" href="icon-192.png">
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js');
-      });
-    }
-  </script>
+  <meta charset="UTF-8">
   <title>Tennis Turnier Manager</title>
   <style>
     :root {
-      --bg: linear-gradient(135deg, #eef2ff 0%, #f8fafc 55%, #e2e8f0 100%);
-      --surface: rgba(255, 255, 255, 0.94);
-      --surface-soft: rgba(255, 255, 255, 0.75);
+      --bg: #f5f7fb;
+      --surface: #ffffff;
       --primary: #2563eb;
       --primary-strong: #1d4ed8;
-      --primary-soft: rgba(37, 99, 235, 0.12);
+      --primary-soft: rgba(37, 99, 235, 0.1);
       --text: #0f172a;
       --text-muted: #475569;
-      --border: rgba(148, 163, 184, 0.35);
-      --border-strong: rgba(37, 99, 235, 0.35);
-      --radius-lg: 22px;
+      --border: rgba(15, 23, 42, 0.08);
+      --radius-lg: 20px;
       --radius-md: 14px;
       --radius-sm: 10px;
-      --shadow-lg: 0 32px 80px -40px rgba(15, 23, 42, 0.45);
-      --shadow-sm: 0 18px 50px -30px rgba(15, 23, 42, 0.35);
-      --transition: 220ms ease;
+      --shadow: 0 24px 70px -40px rgba(15, 23, 42, 0.4);
+      --transition: 200ms ease;
     }
 
-    *,
-    *::before,
-    *::after {
+    * {
       box-sizing: border-box;
     }
 
     body {
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
+      background: linear-gradient(160deg, #eef2ff 0%, #f8fafc 45%, #e0e7ff 100%);
       color: var(--text);
       min-height: 100vh;
       line-height: 1.6;
     }
 
     header {
-      padding: 3rem 1.5rem 2.5rem;
+      padding: 3rem 1.5rem 2rem;
       text-align: center;
     }
 
     header h1 {
       margin: 0;
-      font-size: clamp(2.2rem, 3.2vw, 2.9rem);
-      letter-spacing: -0.03em;
+      font-size: clamp(2.2rem, 3vw, 2.8rem);
+      letter-spacing: -0.02em;
     }
 
     header p {
-      max-width: 640px;
-      margin: 0.75rem auto 0;
+      margin: 0.85rem auto 0;
+      max-width: 680px;
       color: var(--text-muted);
       font-size: 1rem;
     }
 
     main {
-      max-width: 1160px;
+      max-width: 1200px;
       margin: 0 auto 3rem;
       padding: 0 1.75rem 3rem;
       display: grid;
@@ -77,53 +62,43 @@
         "players"
         "controls"
         "matches"
+        "standings"
         "history";
     }
 
-    section {
+    .card {
       background: var(--surface);
-      backdrop-filter: blur(14px);
       border-radius: var(--radius-lg);
-      padding: 1.9rem;
       border: 1px solid var(--border);
-      box-shadow: var(--shadow-lg);
+      box-shadow: var(--shadow);
+      padding: 1.8rem;
       display: grid;
       gap: 1.2rem;
-      transition: transform 240ms ease, box-shadow 320ms ease;
+      transition: transform var(--transition), box-shadow var(--transition);
     }
 
-  @media (hover: hover) and (pointer: fine) {
-    section:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 38px 90px -40px rgba(15, 23, 42, 0.4);
-    }
-  }
-
-    .card--players {
-      grid-area: players;
+    @media (hover: hover) and (pointer: fine) {
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 34px 80px -45px rgba(15, 23, 42, 0.5);
+      }
     }
 
-    .card--controls {
-      grid-area: controls;
-      align-self: start;
-      display: grid;
-      gap: 1rem;
-      grid-auto-rows: min-content;
-    }
-
+    .card--players { grid-area: players; }
+    .card--controls { grid-area: controls; align-self: start; display: grid; gap: 1.1rem; grid-auto-rows: min-content; }
     .card--matches {
       grid-area: matches;
-      align-self: start;
-      gap: 1.4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1.2rem;
     }
-
-    .card--history {
-      grid-area: history;
-    }
+    .card--standings { grid-area: standings; }
+    .card--history { grid-area: history; }
 
     h2 {
       margin: 0;
-      font-size: 1.35rem;
+      font-size: 1.4rem;
       letter-spacing: -0.01em;
     }
 
@@ -132,21 +107,25 @@
     }
 
     .player-form {
-      display: flex;
+      display: grid;
       gap: 0.8rem;
-      flex-wrap: wrap;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .player-form .field-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
     }
 
     input[type="text"] {
       width: 100%;
       padding: 0.75rem 1rem;
-      font-size: 1rem;
       border-radius: var(--radius-md);
-      border: 1px solid var(--border);
-      background: var(--surface-soft);
-      color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(248, 250, 252, 0.85);
+      font-size: 1rem;
       transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
-      box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
     }
 
     input[type="text"]:focus-visible {
@@ -156,39 +135,38 @@
       background: #fff;
     }
 
+    label.checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
     button {
       cursor: pointer;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.3rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+      box-shadow: 0 18px 45px -28px rgba(37, 99, 235, 0.65);
+      transition: transform 160ms ease, box-shadow 200ms ease, filter 160ms ease;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 0.35rem;
-      border: none;
-      border-radius: var(--radius-md);
-      padding: 0.72rem 1.2rem;
-      font-size: 0.98rem;
-      font-weight: 600;
-      color: #fff;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
-      box-shadow: var(--shadow-sm);
-      transition: transform 180ms ease, box-shadow 200ms ease, filter 180ms ease;
     }
 
     button.secondary {
-      background: rgba(37, 99, 235, 0.08);
+      background: rgba(37, 99, 235, 0.15);
       color: var(--primary);
       box-shadow: none;
       border: 1px solid rgba(37, 99, 235, 0.25);
-    }
-
-    button.small {
-      padding: 0.45rem 0.9rem;
-      font-size: 0.85rem;
-      border-radius: var(--radius-sm);
-    }
-
-    button.small.secondary {
-      border-color: rgba(37, 99, 235, 0.2);
-      background: rgba(37, 99, 235, 0.1);
     }
 
     button:focus-visible {
@@ -198,13 +176,8 @@
 
     button:not(:disabled):hover {
       transform: translateY(-1px);
-      box-shadow: 0 18px 40px -20px rgba(37, 99, 235, 0.65);
+      box-shadow: 0 22px 52px -26px rgba(37, 99, 235, 0.75);
       filter: brightness(1.03);
-    }
-
-    button:active:not(:disabled) {
-      transform: translateY(0);
-      filter: brightness(0.97);
     }
 
     button:disabled {
@@ -213,120 +186,42 @@
       box-shadow: none;
     }
 
-    ul.player-list {
+    .player-list {
       list-style: none;
       margin: 0;
       padding: 0;
       display: grid;
-      gap: 0.7rem;
+      gap: 0.75rem;
     }
 
-    ul.player-list li {
+    .player-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      padding: 0.75rem 1rem;
+      padding: 0.8rem 1rem;
       border-radius: var(--radius-md);
+      border: 1px solid rgba(148, 163, 184, 0.35);
       background: rgba(255, 255, 255, 0.85);
-      border: 1px solid var(--border);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
-      transition: transform 150ms ease, box-shadow 220ms ease;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
     }
 
-    ul.player-list li:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 16px 36px -28px rgba(15, 23, 42, 0.55);
+    .player-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    ul.player-list li span.label {
-      font-weight: 600;
-      font-size: 0.98rem;
-    }
-
-    .tag,
-    .badge {
+    .tag {
       display: inline-flex;
       align-items: center;
       padding: 0.25rem 0.6rem;
       border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
       font-size: 0.78rem;
       font-weight: 600;
       letter-spacing: 0.02em;
-      gap: 0.35rem;
-    }
-
-    .tag {
-      background: var(--primary-soft);
-      color: var(--primary);
-    }
-
-    .badge.stage {
-      background: rgba(22, 163, 74, 0.12);
-      color: #166534;
-    }
-
-    .badge.placement {
-      background: rgba(2, 132, 199, 0.12);
-      color: #0c4a6e;
-    }
-
-    .match-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 0.6rem;
-      align-items: center;
-    }
-
-    .mode-toggle {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    .mode-toggle label {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.5rem 1rem;
-      border-radius: var(--radius-md);
-      border: 1px solid transparent;
-      color: var(--text-muted);
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      background: rgba(255, 255, 255, 0.75);
-      transition: border-color var(--transition), color var(--transition), box-shadow var(--transition), background var(--transition);
-    }
-
-    .mode-toggle input {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .mode-toggle label.active {
-      border-color: var(--border-strong);
-      background: var(--primary-soft);
-      color: var(--primary-strong);
-      box-shadow: 0 12px 30px -24px rgba(37, 99, 235, 0.65);
-    }
-
-    .mode-toggle label.disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .status {
-      font-weight: 600;
-      color: var(--text);
-      background: rgba(37, 99, 235, 0.08);
-      padding: 0.65rem 0.9rem;
-      border-radius: var(--radius-md);
-      border: 1px solid rgba(37, 99, 235, 0.2);
     }
 
     .action-bar {
@@ -336,167 +231,130 @@
     }
 
     .action-bar button {
-      flex: 1 1 auto;
-      min-width: 140px;
+      flex: 1 1 200px;
     }
 
-    #byeInfo p {
+    .status {
       margin: 0;
-      padding: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+      background: rgba(37, 99, 235, 0.1);
+      padding: 0.7rem 1rem;
       border-radius: var(--radius-md);
-      background: rgba(15, 118, 110, 0.08);
-      color: #0f766e;
-      border: 1px solid rgba(15, 118, 110, 0.2);
-    }
-
-    #byeInfo strong {
-      font-weight: 700;
-    }
-
-    #matchesForm {
-      display: grid;
-      gap: 1.2rem;
+      border: 1px solid rgba(37, 99, 235, 0.2);
     }
 
     .matches {
       display: grid;
       gap: 1.2rem;
+      margin: 0;
+      align-content: start;
     }
 
-    .bye-info:empty {
-      display: none;
-    }
-
-    .submit-area {
-      display: none;
-      flex-wrap: wrap;
-      gap: 0.8rem;
-      justify-content: flex-end;
-      margin-top: 0.6rem;
-      padding-top: 0.4rem;
-    }
-
-    .empty-state {
+    .option {
       display: grid;
-      place-items: center;
-      text-align: center;
-      padding: 2rem 1.5rem;
-      border-radius: var(--radius-md);
-      border: 1px dashed rgba(148, 163, 184, 0.4);
-      color: var(--text-muted);
-      background: rgba(248, 250, 252, 0.7);
-      font-size: 0.95rem;
-      gap: 0.35rem;
+      gap: 0.45rem;
     }
 
-    .empty-state strong {
-      color: var(--text);
-      font-weight: 700;
+    .option label {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      transition: border-color var(--transition), background var(--transition);
+    }
+
+    .option label:hover,
+    .option label:focus-within {
+      border-color: rgba(37, 99, 235, 0.25);
+      background: rgba(37, 99, 235, 0.08);
+    }
+
+    .option input[type="radio"] {
+      accent-color: var(--primary);
     }
 
     fieldset.match {
       margin: 0;
+      border: 1px solid rgba(148, 163, 184, 0.35);
       border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-      padding: 1.2rem 1.4rem;
-      background: rgba(255, 255, 255, 0.85);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 24px 50px -36px rgba(15, 23, 42, 0.55);
-      animation: fadeInUp 420ms ease both;
+      padding: 1.2rem 1.5rem;
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      display: grid;
+      gap: 0.9rem;
+      animation: fadeInUp 320ms ease both;
     }
 
     fieldset.match legend {
       font-weight: 700;
-      font-size: 0.95rem;
-      letter-spacing: 0.01em;
       color: var(--primary-strong);
+      letter-spacing: 0.02em;
+      padding: 0 0.3rem;
     }
 
-    .option {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      padding: 0.35rem 0;
-      color: var(--text);
-      font-weight: 500;
-    }
-
-    .option input[type="radio"] {
-      width: 1rem;
-      height: 1rem;
-      accent-color: var(--primary);
-    }
-
-    .score-input {
-      margin-top: 0.9rem;
-      display: grid;
-      gap: 0.35rem;
-    }
-
-    .score-input label {
-      font-size: 0.85rem;
-      font-weight: 600;
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      border-radius: var(--radius-md);
+      border: 1px dashed rgba(148, 163, 184, 0.3);
+      background: rgba(248, 250, 252, 0.7);
       color: var(--text-muted);
+      font-size: 0.95rem;
+      display: grid;
+      gap: 0.4rem;
     }
 
-    .score-input input {
-      padding: 0.65rem 0.9rem;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border);
-      background: rgba(248, 250, 252, 0.9);
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.35);
     }
 
-    .timer {
-      margin-top: 0.75rem;
-      padding: 0.75rem 0.9rem;
-      border-radius: var(--radius-md);
-      background: rgba(37, 99, 235, 0.05);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.7rem;
-      border: 1px solid rgba(37, 99, 235, 0.18);
-    }
-
-    .timer-display {
-      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 1.2rem;
-      font-weight: 600;
+    thead {
+      background: rgba(37, 99, 235, 0.12);
       color: var(--primary-strong);
-      min-width: 8.5ch;
     }
 
-    .timer-controls {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
+    th, td {
+      padding: 0.8rem 1rem;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    tbody tr:nth-child(odd) {
+      background: rgba(248, 250, 252, 0.92);
+    }
+
+    tbody tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    tbody tr + tr {
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
     }
 
     .history {
       display: grid;
-      gap: 1.1rem;
+      gap: 1rem;
     }
 
     .history-round {
+      border: 1px solid rgba(148, 163, 184, 0.35);
       border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
       padding: 1.2rem 1.4rem;
       background: rgba(255, 255, 255, 0.9);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      display: grid;
+      gap: 0.75rem;
     }
 
     .history-round h3 {
-      margin: 0 0 0.6rem;
-    }
-
-    .history-round p {
-      margin: 0.35rem 0;
-      color: var(--text-muted);
-      font-size: 0.96rem;
-    }
-
-    .history-round .tag {
-      margin-top: 0.4rem;
-      display: inline-flex;
+      margin: 0;
+      font-size: 1.1rem;
     }
 
     .history-match {
@@ -504,38 +362,13 @@
       background: rgba(15, 23, 42, 0.03);
       border: 1px solid rgba(148, 163, 184, 0.2);
       padding: 0.75rem 0.9rem;
-      margin-bottom: 0.6rem;
       display: grid;
       gap: 0.4rem;
     }
 
     .bye {
       font-style: italic;
-      color: #075985;
-    }
-
-    #champion {
-      display: none;
-    }
-
-    #champion:not(:empty) {
-      display: block;
-      padding: 1.2rem 1.4rem;
-      border-radius: var(--radius-lg);
-      background: linear-gradient(135deg, rgba(250, 204, 21, 0.22), rgba(250, 204, 21, 0.06));
-      border: 1px solid rgba(180, 137, 9, 0.25);
-      box-shadow: 0 30px 70px -50px rgba(250, 204, 21, 0.8);
-      animation: fadeInUp 480ms ease both;
-    }
-
-    #champion:not(:empty) h3 {
-      margin: 0 0 0.4rem;
-    }
-
-    #champion:not(:empty) p {
-      margin: 0;
-      font-weight: 600;
-      color: #b45309;
+      color: #0f766e;
     }
 
     @keyframes fadeInUp {
@@ -543,419 +376,284 @@
         opacity: 0;
         transform: translateY(8px);
       }
-
       to {
         opacity: 1;
         transform: translateY(0);
       }
     }
 
-    @media (min-width: 820px) {
+    @media (min-width: 800px) {
       main {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         grid-template-areas:
           "players controls"
           "matches matches"
+          "standings standings"
           "history history";
       }
     }
 
-    @media (min-width: 1040px) {
+    @media (min-width: 1100px) {
       main {
-        grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr) minmax(320px, 1.1fr);
+        grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr) minmax(340px, 1.2fr);
         grid-template-areas:
           "players controls matches"
+          "standings standings matches"
           "history history matches";
       }
     }
 
-  @media (max-width: 720px) {
-    header {
-      padding: 2.5rem 1.2rem 1.8rem;
-    }
+    @media (max-width: 720px) {
+      header {
+        padding: 2.4rem 1.1rem 1.8rem;
+      }
 
       main {
-        padding: 0 1rem 2.4rem;
+        padding: 0 1rem 2.2rem;
         gap: 1.2rem;
       }
 
-      section {
-        padding: 1.4rem;
+      .card {
+        padding: 1.4rem 1.2rem;
       }
 
-    .player-form {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .action-bar {
-      flex-direction: column;
-    }
-
-    button {
-      width: 100%;
-      justify-content: center;
-    }
-
-    .timer {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
-
-  @media (max-width: 540px) {
-    header h1 {
-      font-size: clamp(1.8rem, 8vw, 2.2rem);
-    }
-
-    header p {
-      font-size: 0.92rem;
-    }
-
-    main {
-      padding: 0 1rem 2rem;
-      gap: 1rem;
-    }
-
-    section {
-      padding: 1.2rem 1rem;
-      border-radius: 18px;
-      gap: 1rem;
-    }
-
-    h2 {
-      font-size: 1.15rem;
-    }
-
-    input[type="text"] {
-      padding: 0.65rem 0.8rem;
-      font-size: 0.95rem;
-    }
-
-    .mode-toggle label {
-      flex: 1 1 45%;
-      justify-content: center;
-      font-size: 0.85rem;
-      padding: 0.45rem 0.75rem;
-    }
-
-    .action-bar {
-      gap: 0.6rem;
-    }
-
-    .action-bar button {
-      min-width: 0;
-    }
-
-    .matches {
-      gap: 1rem;
-    }
-
-    fieldset.match {
-      padding: 1rem;
-    }
-
-    .timer {
-      width: 100%;
-      align-items: stretch;
-    }
-
-    .timer-controls {
-      width: 100%;
-      justify-content: space-between;
-    }
-
-    .timer-controls button {
-      flex: 1 1 48%;
-      width: auto;
-    }
-
-    .history-match {
-      padding: 0.65rem 0.75rem;
-    }
-  }
-
-    @media (prefers-reduced-motion: reduce) {
-
-      *,
-      *::before,
-      *::after {
-        animation-duration: 1ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 1ms !important;
-        scroll-behavior: auto !important;
+      .player-form {
+        grid-template-columns: 1fr;
       }
+
+      .action-bar {
+        flex-direction: column;
+        gap: 0.6rem;
+      }
+
+      .action-bar button {
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .matches {
+        gap: 1rem;
+      }
+
+      fieldset.match {
+        padding: 1rem 1rem 1.1rem;
+      }
+
+      .history-match {
+        padding: 0.65rem 0.75rem;
+      }
+    }
+
+    @media (max-width: 540px) {
+      header h1 {
+        font-size: clamp(1.9rem, 8vw, 2.2rem);
+      }
+
+      header p {
+        font-size: 0.95rem;
+      }
+
+      h2 {
+        font-size: 1.2rem;
+      }
+
+      input[type="text"] {
+        padding: 0.65rem 0.75rem;
+        font-size: 0.95rem;
+      }
+
     }
   </style>
 </head>
-
 <body>
   <header>
     <h1>Tennis Turnier Manager</h1>
-    <p>Erstelle zufällige Einzel- oder Doppelrunden, erfasse Ergebnisse und finde den Champion.</p>
+    <p>Verwalte beliebig viele Runden, markiere gesetzte Spieler, erfasse Ergebnisse und behalte mit der Rangliste jederzeit den Überblick.</p>
   </header>
 
   <main>
     <section class="card card--players">
       <h2>Spieler hinzufügen</h2>
-      <form class="player-form" id="playerForm">
+      <form id="playerForm" class="player-form">
         <input id="playerInput" type="text" placeholder="Name des Spielers" autocomplete="off" required>
+        <div class="field-group">
+          <label class="checkbox">
+            <input id="seededInput" type="checkbox">
+            gesetzt
+          </label>
+        </div>
         <button type="submit">Hinzufügen</button>
       </form>
-      <ul class="player-list" id="playerList"></ul>
+      <ul id="playerList" class="player-list"></ul>
     </section>
 
     <section class="card card--controls">
-      <h2>Rundenverwaltung</h2>
-      <p class="status" id="roundStatus">Aktuelle Teilnehmer: 0</p>
-      <div class="mode-toggle" id="modeToggle">
-        <label class="active">
-          <input type="radio" name="mode" value="singles" checked>
-          Einzel
-        </label>
-        <label>
-          <input type="radio" name="mode" value="doubles">
-          Doppel
-        </label>
-      </div>
+      <h2>Rundensteuerung</h2>
+      <p id="roundInfo" class="status">Aktive Spieler: 0</p>
       <div class="action-bar">
-        <button id="startRoundBtn">Neue Runde starten</button>
+        <button id="generateRoundBtn" disabled>Neue Runde erstellen</button>
         <button id="resetBtn" class="secondary">Turnier zurücksetzen</button>
       </div>
-      <div id="champion"></div>
     </section>
 
     <section class="card card--matches">
-      <h2>Aktuelle Matches</h2>
-      <div id="byeInfo" class="bye-info"></div>
+      <h2>Aktuelle Runde</h2>
       <form id="matchesForm">
-        <div class="matches" id="matchesContainer"></div>
-        <div class="submit-area" id="submitWrapper">
+        <div id="matchesContainer" class="matches">
+          <div class="empty-state">
+            <strong>Noch keine Runde gestartet</strong>
+            <span>Klicke auf „Neue Runde erstellen“, um Begegnungen zu generieren.</span>
+          </div>
+        </div>
+        <div class="action-bar" id="submitWrapper" style="display:none;">
           <button type="submit">Ergebnisse übernehmen</button>
         </div>
       </form>
     </section>
 
+    <section class="card card--standings">
+      <h2>Rangliste</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Spieler</th>
+              <th>Punkte</th>
+              <th>Gewonnen</th>
+              <th>Verloren</th>
+              <th>Spieldifferenz</th>
+            </tr>
+          </thead>
+          <tbody id="standingsBody">
+            <tr>
+              <td colspan="5" style="text-align:center; color: var(--text-muted); padding: 1.2rem;">
+                Füge Spieler hinzu und starte eine Runde, um die Rangliste zu sehen.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="card card--history">
       <h2>Historie</h2>
-      <div class="history" id="history"></div>
+      <div id="history" class="history">
+        <div class="empty-state">
+          <strong>Noch keine Runden gespielt</strong>
+          <span>Ergebnisse werden hier protokolliert, sobald du eine Runde abschließt.</span>
+        </div>
+      </div>
     </section>
   </main>
 
   <script>
     const state = {
-      participants: [],
-      currentRound: 0,
-      matches: [],
-      bye: [],
+      players: [],
+      nextId: 1,
+      currentRound: null,
       history: [],
-      mode: 'singles'
+      pairCounts: new Map()
     };
-
-    let nextId = 1;
 
     const playerForm = document.getElementById('playerForm');
     const playerInput = document.getElementById('playerInput');
+    const seededInput = document.getElementById('seededInput');
     const playerList = document.getElementById('playerList');
-    const startRoundBtn = document.getElementById('startRoundBtn');
+
+    const roundInfo = document.getElementById('roundInfo');
+    const generateRoundBtn = document.getElementById('generateRoundBtn');
     const resetBtn = document.getElementById('resetBtn');
-    const roundStatus = document.getElementById('roundStatus');
-    const modeToggle = document.getElementById('modeToggle');
+
     const matchesForm = document.getElementById('matchesForm');
     const matchesContainer = document.getElementById('matchesContainer');
     const submitWrapper = document.getElementById('submitWrapper');
+
+    const standingsBody = document.getElementById('standingsBody');
     const historyContainer = document.getElementById('history');
-    const byeInfo = document.getElementById('byeInfo');
-    const champion = document.getElementById('champion');
-    const modeInputs = modeToggle.querySelectorAll('input[name="mode"]');
-    const matchTimers = new Map();
-
-    const getStageInfo = (participantCount) => {
-      if (participantCount <= 2) {
-        return { stage: 'Finale', placement: 'Spiel um Platz 1' };
-      }
-      if (participantCount <= 4) {
-        return { stage: 'Halbfinale', placement: 'Spiel um Finaleinzug' };
-      }
-      if (participantCount <= 8) {
-        return { stage: 'Viertelfinale', placement: 'Spiel um Halbfinaleinzug' };
-      }
-      if (participantCount <= 16) {
-        return { stage: 'Achtelfinale', placement: 'Spiel um Viertelfinaleinzug' };
-      }
-      if (participantCount <= 32) {
-        return { stage: 'Sechzehntelfinale', placement: 'Spiel um Achtelfinaleinzug' };
-      }
-      return { stage: 'K.-o.-Runde', placement: 'K.-o.-Phase' };
-    };
-
-    const applyModeState = () => {
-      modeInputs.forEach((input) => {
-        if (input.value === 'doubles') {
-          const disableDoubles = state.participants.length < 4;
-          input.disabled = disableDoubles;
-          if (disableDoubles && state.mode === 'doubles') {
-            state.mode = 'singles';
-          }
-        }
-        input.checked = input.value === state.mode;
-        const label = input.parentElement;
-        label.classList.toggle('active', input.checked);
-        label.classList.toggle('disabled', input.disabled);
-      });
-    };
-
-    modeInputs.forEach((input) => {
-      input.addEventListener('change', () => {
-        if (input.disabled) {
-          return;
-        }
-        state.mode = input.value;
-        applyModeState();
-        updateStatus();
-      });
-    });
-
-    const ensureTimer = (matchId) => {
-      if (!matchTimers.has(matchId)) {
-        matchTimers.set(matchId, {
-          elapsed: 0,
-          running: false,
-          lastStart: null,
-          intervalId: null
-        });
-      }
-      return matchTimers.get(matchId);
-    };
-
-    const formatTime = (ms) => {
-      const totalSeconds = Math.floor(ms / 1000);
-      const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-      const seconds = (totalSeconds % 60).toString().padStart(2, '0');
-      const millis = Math.floor(ms % 1000).toString().padStart(3, '0');
-      return `${minutes}:${seconds}.${millis}`;
-    };
-
-    const updateTimerDisplay = (matchId) => {
-      const timer = matchTimers.get(matchId);
-      if (!timer) {
-        return;
-      }
-      let total = timer.elapsed;
-      if (timer.running && timer.lastStart !== null) {
-        total += Date.now() - timer.lastStart;
-      }
-
-      const display = document.getElementById(`timer-display-${matchId}`);
-      if (display) {
-        display.textContent = formatTime(total);
-      }
-
-      const startBtn = document.getElementById(`timer-start-${matchId}`);
-      const stopBtn = document.getElementById(`timer-stop-${matchId}`);
-      const hasTime = total > 0;
-
-      if (startBtn) {
-        const label = !timer.running && hasTime ? 'Weiter' : 'Start';
-        startBtn.textContent = label;
-        startBtn.disabled = timer.running;
-      }
-      if (stopBtn) {
-        const canStop = timer.running || hasTime;
-        stopBtn.disabled = !canStop;
-      }
-    };
-
-    const startTimer = (matchId) => {
-      const timer = ensureTimer(matchId);
-      if (timer.running) {
-        return;
-      }
-      timer.running = true;
-      timer.lastStart = Date.now();
-      if (timer.intervalId) {
-        clearInterval(timer.intervalId);
-      }
-      timer.intervalId = setInterval(() => updateTimerDisplay(matchId), 50);
-      updateTimerDisplay(matchId);
-    };
-
-    const stopTimer = (matchId) => {
-      const timer = matchTimers.get(matchId);
-      if (!timer) {
-        return;
-      }
-      if (timer.running) {
-        timer.elapsed += Date.now() - timer.lastStart;
-        timer.running = false;
-        timer.lastStart = null;
-      } else {
-        timer.elapsed = 0;
-      }
-      if (timer.intervalId) {
-        clearInterval(timer.intervalId);
-        timer.intervalId = null;
-      }
-      updateTimerDisplay(matchId);
-    };
-
-    const clearTimer = (matchId) => {
-      const timer = matchTimers.get(matchId);
-      if (!timer) {
-        return;
-      }
-      if (timer.intervalId) {
-        clearInterval(timer.intervalId);
-        timer.intervalId = null;
-      }
-      matchTimers.delete(matchId);
-    };
-
-    const clearAllTimers = () => {
-      Array.from(matchTimers.keys()).forEach((id) => clearTimer(id));
-    };
-
-    const createParticipant = (label, members = null) => ({
-      id: nextId++,
-      label,
-      members: members || [label],
-      type: members && members.length > 1 ? 'team' : 'player'
-    });
 
     const shuffle = (array) => {
-      for (let i = array.length - 1; i > 0; i -= 1) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+        [copy[i], copy[j]] = [copy[j], copy[i]];
       }
+      return copy;
     };
 
-    const renderParticipants = () => {
+    const getPairKey = (seededId, unseededId) => `${seededId}|${unseededId}`;
+
+    const getPairCount = (seededId, unseededId, source = state.pairCounts) => {
+      if (!seededId || !unseededId) return 0;
+      const key = getPairKey(seededId, unseededId);
+      return source.get(key) || 0;
+    };
+
+    const incrementPairCount = (seededId, unseededId, target = state.pairCounts) => {
+      if (!seededId || !unseededId) return;
+      const key = getPairKey(seededId, unseededId);
+      target.set(key, (target.get(key) || 0) + 1);
+    };
+
+    const createPlayer = (name, seeded) => ({
+      id: state.nextId++,
+      name,
+      seeded,
+      stats: {
+        points: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0
+      }
+    });
+
+    const formatDiff = (player) => player.stats.wins - player.stats.losses;
+
+    const renderPlayers = () => {
       playerList.innerHTML = '';
-      if (!state.participants.length) {
-        const li = document.createElement('li');
-        li.textContent = 'Noch keine Spieler hinzugefügt.';
-        playerList.appendChild(li);
+      if (!state.players.length) {
+        const empty = document.createElement('li');
+        empty.className = 'player-item';
+        empty.style.justifyContent = 'center';
+        empty.style.color = 'var(--text-muted)';
+        empty.textContent = 'Noch keine Spieler hinzugefügt.';
+        playerList.appendChild(empty);
         return;
       }
 
-      state.participants.forEach((participant) => {
+      state.players.forEach((player) => {
         const li = document.createElement('li');
-        const label = document.createElement('span');
-        label.className = 'label';
-        label.textContent = participant.label;
-        li.appendChild(label);
+        li.className = 'player-item';
 
-        const info = document.createElement('span');
-        info.className = 'tag';
-        info.textContent = participant.members.length > 1 ? 'Team' : 'Spieler';
-        li.appendChild(info);
+        const left = document.createElement('div');
+        left.className = 'player-meta';
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = player.name;
+        left.appendChild(nameSpan);
 
-        if (participant.type === 'player' && !state.currentRound) {
+        if (player.seeded) {
+          const badge = document.createElement('span');
+          badge.className = 'tag';
+          badge.textContent = 'gesetzt';
+          left.appendChild(badge);
+        }
+
+        li.appendChild(left);
+
+        if (!state.history.length && !state.currentRound) {
           const removeBtn = document.createElement('button');
           removeBtn.className = 'secondary';
-          removeBtn.style.marginLeft = '0.8rem';
           removeBtn.textContent = 'Entfernen';
-          removeBtn.addEventListener('click', () => removeParticipant(participant.id));
+          removeBtn.addEventListener('click', () => {
+            state.players = state.players.filter((p) => p.id !== player.id);
+            renderPlayers();
+            updateControls();
+            renderStandings();
+          });
           li.appendChild(removeBtn);
         }
 
@@ -963,415 +661,386 @@
       });
     };
 
-    const updateStatus = () => {
-      applyModeState();
-      const modeLabel = state.mode === 'singles' ? 'Einzel' : 'Doppel';
-      roundStatus.textContent = `Aktuelle Teilnehmer: ${state.participants.length} – Modus: ${modeLabel}`;
-      const required = state.mode === 'doubles' ? 4 : 2;
-      const hasEnoughParticipants = state.participants.length >= required;
-      startRoundBtn.disabled = state.matches.length > 0 || !hasEnoughParticipants;
+    const updateControls = () => {
+      const seededCount = state.players.filter((p) => p.seeded).length;
+      const unseededCount = state.players.length - seededCount;
+      roundInfo.textContent = `Aktive Spieler: ${state.players.length} – gesetzt: ${seededCount}, ungesetzt: ${unseededCount}`;
+      const canGenerate = state.players.length >= 4 && seededCount > 0 && unseededCount > 0;
+      generateRoundBtn.disabled = !canGenerate || !!state.currentRound;
     };
+
 
     const renderMatches = () => {
       matchesContainer.innerHTML = '';
-      submitWrapper.style.display = state.matches.length ? 'flex' : 'none';
-      if (state.bye.length) {
-        const names = state.bye.map((participant) => participant.label).join(', ');
-        byeInfo.innerHTML = `<p><strong>Freilose:</strong> ${names} rücken automatisch in die nächste Runde vor.</p>`;
-      } else {
-        byeInfo.innerHTML = '';
-      }
 
-      if (!state.matches.length) {
+      if (!state.currentRound) {
         matchesContainer.innerHTML = `
           <div class="empty-state">
-            <strong>Keine aktiven Matches</strong>
-            <span>Starte eine neue Runde, um Begegnungen zu erstellen.</span>
+            <strong>Noch keine Runde gestartet</strong>
+            <span>Klicke auf „Neue Runde erstellen“, um Begegnungen zu generieren.</span>
           </div>
+        `;
+        submitWrapper.style.display = 'none';
+        return;
+      }
+
+      const { matches, byes } = state.currentRound;
+
+      matches.forEach((match) => {
+        const fieldset = document.createElement('fieldset');
+        fieldset.className = 'match';
+
+        const teamASeeded = state.players.find((p) => p.id === match.teamA.seededId);
+        const teamAUnseeded = state.players.find((p) => p.id === match.teamA.unseededId);
+        const teamBSeeded = state.players.find((p) => p.id === match.teamB.seededId);
+        const teamBUnseeded = state.players.find((p) => p.id === match.teamB.unseededId);
+
+        if (!teamASeeded || !teamAUnseeded || !teamBSeeded || !teamBUnseeded) {
+          return;
+        }
+
+        const legend = document.createElement('legend');
+        legend.textContent = `${teamASeeded.name} & ${teamAUnseeded.name} vs. ${teamBSeeded.name} & ${teamBUnseeded.name}`;
+        fieldset.appendChild(legend);
+
+        const optionWrapper = document.createElement('div');
+        optionWrapper.className = 'option';
+
+        const options = [
+          { value: 'A', label: `${teamASeeded.name} & ${teamAUnseeded.name} gewinnen` },
+          { value: 'DRAW', label: 'Unentschieden' },
+          { value: 'B', label: `${teamBSeeded.name} & ${teamBUnseeded.name} gewinnen` }
+        ];
+
+        options.forEach((option) => {
+          const label = document.createElement('label');
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = `match-${match.id}`;
+          radio.value = option.value;
+          label.appendChild(radio);
+          label.append(option.label);
+          optionWrapper.appendChild(label);
+        });
+        fieldset.appendChild(optionWrapper);
+
+        matchesContainer.appendChild(fieldset);
+      });
+
+      if (byes.length) {
+        const byeCard = document.createElement('fieldset');
+        byeCard.className = 'match';
+        const legend = document.createElement('legend');
+        legend.textContent = 'Freilose';
+        byeCard.appendChild(legend);
+
+        const info = document.createElement('p');
+        info.className = 'bye';
+        const names = byes.map((b) => b.name).join(', ');
+        info.textContent = `${names} ${byes.length === 1 ? 'erhält' : 'erhalten'} in dieser Runde automatisch 2 Punkte.`;
+        byeCard.appendChild(info);
+        matchesContainer.appendChild(byeCard);
+      }
+
+      submitWrapper.style.display = matches.length ? 'flex' : 'none';
+    };
+
+    const renderStandings = () => {
+      if (!state.players.length) {
+        standingsBody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align:center; color: var(--text-muted); padding: 1.2rem;">
+              Füge Spieler hinzu und starte eine Runde, um die Rangliste zu sehen.
+            </td>
+          </tr>
         `;
         return;
       }
 
-      state.matches.forEach((match, index) => {
-        const fieldset = document.createElement('fieldset');
-        fieldset.className = 'match';
-        const legend = document.createElement('legend');
-        legend.textContent = `Match ${index + 1} – ${match.type === 'doubles' ? 'Doppel' : 'Einzel'}`;
-        fieldset.appendChild(legend);
+      const sorted = [...state.players].sort((a, b) => {
+        if (b.stats.points !== a.stats.points) return b.stats.points - a.stats.points;
+        const diffB = formatDiff(b);
+        const diffA = formatDiff(a);
+        if (diffB !== diffA) return diffB - diffA;
+        if (b.stats.wins !== a.stats.wins) return b.stats.wins - a.stats.wins;
+        return a.name.localeCompare(b.name, 'de');
+      });
 
-        if (match.meta) {
-          const metaRow = document.createElement('div');
-          metaRow.className = 'match-meta';
+      standingsBody.innerHTML = '';
 
-          if (match.meta.stage) {
-            const stageBadge = document.createElement('span');
-            stageBadge.className = 'badge stage';
-            stageBadge.textContent = match.meta.stage;
-            metaRow.appendChild(stageBadge);
-          }
-
-          if (match.meta.placement) {
-            const placementBadge = document.createElement('span');
-            placementBadge.className = 'badge placement';
-            placementBadge.textContent = match.meta.placement;
-            metaRow.appendChild(placementBadge);
-          }
-
-          if (metaRow.children.length) {
-            fieldset.appendChild(metaRow);
-          }
-        }
-
-        match.options.forEach((option, optionIndex) => {
-          const label = document.createElement('label');
-          label.className = 'option';
-          const radio = document.createElement('input');
-          radio.type = 'radio';
-          radio.name = `match-${match.id}`;
-          radio.value = optionIndex;
-          label.appendChild(radio);
-
-          const text = document.createElement('span');
-          text.textContent = option.label;
-          label.appendChild(text);
-
-          fieldset.appendChild(label);
-        });
-
-        ensureTimer(match.id);
-
-        const timerWrapper = document.createElement('div');
-        timerWrapper.className = 'timer';
-
-        const timerLabel = document.createElement('span');
-        timerLabel.textContent = 'Spielzeit:';
-        timerWrapper.appendChild(timerLabel);
-
-        const timerDisplay = document.createElement('span');
-        timerDisplay.className = 'timer-display';
-        timerDisplay.id = `timer-display-${match.id}`;
-        timerWrapper.appendChild(timerDisplay);
-
-        const timerControls = document.createElement('div');
-        timerControls.className = 'timer-controls';
-
-        const startBtn = document.createElement('button');
-        startBtn.type = 'button';
-        startBtn.className = 'small';
-        startBtn.id = `timer-start-${match.id}`;
-        startBtn.textContent = 'Start';
-        startBtn.addEventListener('click', () => startTimer(match.id));
-        timerControls.appendChild(startBtn);
-
-        const stopBtn = document.createElement('button');
-        stopBtn.type = 'button';
-        stopBtn.className = 'small secondary';
-        stopBtn.id = `timer-stop-${match.id}`;
-        stopBtn.textContent = 'Stop';
-        stopBtn.addEventListener('click', () => stopTimer(match.id));
-        timerControls.appendChild(stopBtn);
-
-        timerWrapper.appendChild(timerControls);
-        fieldset.appendChild(timerWrapper);
-
-        const scoreWrapper = document.createElement('div');
-        scoreWrapper.className = 'score-input';
-        const scoreLabel = document.createElement('label');
-        scoreLabel.textContent = 'Ergebnis (z. B. 6:4, 4:6, 10:8)';
-        const scoreInput = document.createElement('input');
-        scoreInput.type = 'text';
-        scoreInput.name = `score-${match.id}`;
-        scoreWrapper.appendChild(scoreLabel);
-        scoreWrapper.appendChild(scoreInput);
-        fieldset.appendChild(scoreWrapper);
-
-        matchesContainer.appendChild(fieldset);
-        updateTimerDisplay(match.id);
+      sorted.forEach((player) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${player.name}${player.seeded ? ' <span class="tag" style="margin-left:6px;">gesetzt</span>' : ''}</td>
+          <td>${player.stats.points}</td>
+          <td>${player.stats.wins}</td>
+          <td>${player.stats.losses}</td>
+          <td>${formatDiff(player)}</td>
+        `;
+        standingsBody.appendChild(tr);
       });
     };
 
     const renderHistory = () => {
       historyContainer.innerHTML = '';
       if (!state.history.length) {
-        const empty = document.createElement('p');
-        empty.textContent = 'Noch keine Runden gespielt.';
-        historyContainer.appendChild(empty);
+        historyContainer.innerHTML = `
+          <div class="empty-state">
+            <strong>Noch keine Runden gespielt</strong>
+            <span>Ergebnisse werden hier protokolliert, sobald du eine Runde abschließt.</span>
+          </div>
+        `;
         return;
       }
 
-      state.history.forEach((round) => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'history-round';
+      state.history.slice().reverse().forEach((round) => {
+        const roundCard = document.createElement('div');
+        roundCard.className = 'history-round';
         const title = document.createElement('h3');
         title.textContent = `Runde ${round.number}`;
-        wrapper.appendChild(title);
+        roundCard.appendChild(title);
 
         round.matches.forEach((match, index) => {
-          const matchBlock = document.createElement('div');
-          matchBlock.className = 'history-match';
+          const block = document.createElement('div');
+          block.className = 'history-match';
 
-          if (match.stage || match.placement) {
-            const metaRow = document.createElement('div');
-            metaRow.className = 'match-meta';
+          const vs = document.createElement('p');
+          const teamAText = match.teamA.join(' & ');
+          const teamBText = match.teamB.join(' & ');
+          vs.innerHTML = `<strong>Match ${index + 1}:</strong> ${teamAText} gegen ${teamBText}`;
+          block.appendChild(vs);
 
-            if (match.stage) {
-              const stageBadge = document.createElement('span');
-              stageBadge.className = 'badge stage';
-              stageBadge.textContent = match.stage;
-              metaRow.appendChild(stageBadge);
-            }
+          const result = document.createElement('p');
+          result.innerHTML = match.resultText;
+          block.appendChild(result);
 
-            if (match.placement) {
-              const placementBadge = document.createElement('span');
-              placementBadge.className = 'badge placement';
-              placementBadge.textContent = match.placement;
-              metaRow.appendChild(placementBadge);
-            }
-
-            if (metaRow.children.length) {
-              matchBlock.appendChild(metaRow);
-            }
-          }
-
-          const p = document.createElement('p');
-          const vs = match.type === 'doubles' ? 'vs.' : 'gegen';
-          const contestants = match.type === 'doubles'
-            ? `${match.teams[0]} ${vs} ${match.teams[1]}`
-            : `${match.players[0]} ${vs} ${match.players[1]}`;
-          const scoreText = match.score ? ` – Ergebnis: ${match.score}` : '';
-          p.innerHTML = `<strong>Match ${index + 1}:</strong> ${contestants}<br><span class="tag">Sieger: ${match.winner}</span>${scoreText}`;
-          matchBlock.appendChild(p);
-
-          wrapper.appendChild(matchBlock);
+          roundCard.appendChild(block);
         });
 
-        if (round.byes && round.byes.length) {
+        if (round.byes.length) {
           const bye = document.createElement('p');
           bye.className = 'bye';
-          bye.textContent = `${round.byes.join(', ')} ${round.byes.length === 1 ? 'war' : 'waren'} in dieser Runde spielfrei.`;
-          wrapper.appendChild(bye);
+          bye.textContent = `${round.byes.join(', ')} erhielten ein Freilos (+2 Punkte).`;
+          roundCard.appendChild(bye);
         }
 
-        historyContainer.appendChild(wrapper);
+        historyContainer.appendChild(roundCard);
       });
     };
 
-    const renderChampion = () => {
-      if (state.participants.length === 1 && !state.matches.length && state.currentRound > 0) {
-        const winner = state.participants[0];
-        champion.innerHTML = `
-          <h3>Champion</h3>
-          <p><strong>${winner.label}</strong> gewinnt das Turnier!</p>
-        `;
-      } else {
-        champion.innerHTML = '';
-      }
-    };
-
-    const removeParticipant = (id) => {
-      state.participants = state.participants.filter((participant) => participant.id !== id);
-      renderParticipants();
-      updateStatus();
-    };
-
-    const resetTournament = () => {
-      state.participants = [];
-      state.currentRound = 0;
-      state.matches = [];
-      state.bye = [];
-      state.history = [];
-      state.mode = 'singles';
-      nextId = 1;
-      clearAllTimers();
-      champion.innerHTML = '';
-      applyModeState();
-      renderParticipants();
-      updateStatus();
-      renderMatches();
-      renderHistory();
-    };
-
-    const createMatchOptions = (participants) => {
-      const options = [];
-      const teams = [];
-      for (let i = 0; i < participants.length; i += 2) {
-        const teamMembers = [participants[i], participants[i + 1]];
-        options.push({
-          label: `${teamMembers[0].label} & ${teamMembers[1].label}`,
-          members: [...teamMembers[0].members, ...teamMembers[1].members]
-        });
-        teams.push(`${teamMembers[0].label} & ${teamMembers[1].label}`);
-      }
-      return { options, teams };
-    };
-
-    const startRound = () => {
-      if (state.matches.length) {
+    const generateRound = () => {
+      if (state.currentRound) {
         alert('Bitte beende zuerst die aktuelle Runde.');
         return;
       }
-
-      const mode = state.mode;
-      const minimum = mode === 'doubles' ? 4 : 2;
-      if (state.participants.length < minimum) {
-        alert(mode === 'doubles'
-          ? 'Für eine Doppelrunde werden mindestens vier Spieler benötigt.'
-          : 'Mindestens zwei Teilnehmer werden benötigt.');
+      if (state.players.length < 4) {
+        alert('Für Doppel werden mindestens vier Spieler (jeweils gesetzt und ungesetzt) benötigt.');
         return;
       }
 
-      clearAllTimers();
+      const seededPool = shuffle(state.players.filter((p) => p.seeded));
+      const unseededPool = shuffle(state.players.filter((p) => !p.seeded));
 
-      const pool = state.participants.map((participant) => ({
-        ...participant,
-        members: [...participant.members]
-      }));
-      shuffle(pool);
+      if (!seededPool.length || !unseededPool.length) {
+        alert('Es werden sowohl gesetzte als auch ungesetzte Spieler benötigt, um eine Doppelrunde zu erstellen.');
+        return;
+      }
 
+      const tempCounts = new Map(state.pairCounts);
+      const teams = [];
+      const byes = [];
+
+      while (seededPool.length && unseededPool.length) {
+        const seeded = seededPool.shift();
+        let bestIndex = 0;
+        let bestScore = Number.POSITIVE_INFINITY;
+
+        unseededPool.forEach((candidate, idx) => {
+          const score = getPairCount(seeded.id, candidate.id, tempCounts);
+          if (score < bestScore || (score === bestScore && Math.random() > 0.5)) {
+            bestScore = score;
+            bestIndex = idx;
+          }
+        });
+
+        const partner = unseededPool.splice(bestIndex, 1)[0];
+        teams.push({ seededId: seeded.id, unseededId: partner.id });
+        incrementPairCount(seeded.id, partner.id, tempCounts);
+      }
+
+      // verbleibende Spieler erhalten Freilos (keine gemischten Teams mehr möglich)
+      seededPool.forEach((player) => byes.push(player));
+      unseededPool.forEach((player) => byes.push(player));
+
+      if (!teams.length) {
+        alert('Es konnten keine gemischten Doppel-Teams gebildet werden. Füge weitere Spieler hinzu.');
+        return;
+      }
+
+      const teamOrder = shuffle(teams);
       const matches = [];
-      const byeList = [];
-      const stageInfo = getStageInfo(state.participants.length);
 
-      if (mode === 'singles') {
-        if (pool.length % 2 === 1) {
-          byeList.push(pool.pop());
-        }
-        while (pool.length >= 2) {
-          const p1 = pool.pop();
-          const p2 = pool.pop();
-          matches.push({
-            id: `${state.currentRound + 1}-${matches.length + 1}`,
-            type: 'singles',
-            options: [
-              { label: p1.label, members: [...p1.members] },
-              { label: p2.label, members: [...p2.members] }
-            ],
-            detail: { players: [p1.label, p2.label] },
-            meta: { ...stageInfo }
-          });
-        }
-      } else {
-        const remainder = pool.length % 4;
-        if (remainder) {
-          byeList.push(...pool.splice(-remainder));
-        }
-        while (pool.length >= 4) {
-          const quartet = pool.splice(-4);
-          const { options, teams } = createMatchOptions(quartet);
-          matches.push({
-            id: `${state.currentRound + 1}-${matches.length + 1}`,
-            type: 'doubles',
-            options,
-            detail: { teams },
-            meta: { ...stageInfo }
-          });
-        }
+      for (let i = 0; i + 1 < teamOrder.length; i += 2) {
+        const teamA = teamOrder[i];
+        const teamB = teamOrder[i + 1];
+        matches.push({
+          id: `${state.history.length + 1}-${matches.length + 1}`,
+          teamA,
+          teamB
+        });
       }
 
-      if (!matches.length) {
-        alert('Es konnten keine Spiele für diese Runde erstellt werden.');
+      if (teamOrder.length % 2 === 1) {
+        const leftoverTeam = teamOrder[teamOrder.length - 1];
+        const leftoverPlayers = [
+          state.players.find((p) => p.id === leftoverTeam.seededId),
+          state.players.find((p) => p.id === leftoverTeam.unseededId)
+        ].filter(Boolean);
+        byes.push(...leftoverPlayers);
+      }
+
+      if (!matches.length && byes.length) {
+        alert('Durch die aktuelle Konstellation entsteht nur ein Freilos. Füge weitere Spieler hinzu.');
         return;
       }
 
-      state.currentRound += 1;
-      state.matches = matches;
-      state.bye = byeList;
+      state.currentRound = {
+        number: state.history.length + 1,
+        matches,
+        byes
+      };
+
       renderMatches();
-      updateStatus();
+      updateControls();
+    };
+
+    const applyResult = (player, outcome) => {
+      if (outcome === 'WIN') {
+        player.stats.points += 2;
+        player.stats.wins += 1;
+      } else if (outcome === 'LOSS') {
+        player.stats.losses += 1;
+      } else if (outcome === 'DRAW') {
+        player.stats.points += 1;
+        player.stats.draws += 1;
+      } else if (outcome === 'BYE') {
+        player.stats.points += 2;
+      }
     };
 
     const processResults = (event) => {
       event.preventDefault();
-      if (!state.matches.length) {
+      if (!state.currentRound) {
         return;
       }
 
-      const winners = [];
-      const roundSummary = {
-        number: state.currentRound,
+      const { matches, byes, number } = state.currentRound;
+
+      const roundRecord = {
+        number,
         matches: [],
-        byes: state.bye.map((participant) => participant.label)
+        byes: byes.map((player) => player.name)
       };
 
-      for (const match of state.matches) {
-        const choice = matchesForm.querySelector(`input[name="match-${match.id}"]:checked`);
-        if (!choice) {
-          alert('Bitte wähle für jedes Match einen Sieger aus.');
+      for (const match of matches) {
+        const result = matchesForm.querySelector(`input[name="match-${match.id}"]:checked`);
+        if (!result) {
+          alert('Bitte trage für jedes Match ein Ergebnis ein.');
           return;
         }
-        const winnerIndex = Number(choice.value);
-        const winnerOption = match.options[winnerIndex];
-        const scoreInput = matchesForm.querySelector(`input[name="score-${match.id}"]`);
-        const score = scoreInput.value.trim();
 
-        if (match.type === 'doubles') {
-          roundSummary.matches.push({
-            type: 'doubles',
-            teams: match.detail.teams,
-            winner: winnerOption.label,
-            score,
-            stage: match.meta?.stage ?? null,
-            placement: match.meta?.placement ?? null
-          });
-          winnerOption.members.forEach((memberName) => {
-            winners.push(createParticipant(memberName, [memberName]));
-          });
-        } else {
-          roundSummary.matches.push({
-            type: 'singles',
-            players: match.detail.players,
-            winner: winnerOption.label,
-            score,
-            stage: match.meta?.stage ?? null,
-            placement: match.meta?.placement ?? null
-          });
-          winners.push(createParticipant(winnerOption.label, [...winnerOption.members]));
+        const teamAPlayers = [
+          state.players.find((p) => p.id === match.teamA.seededId),
+          state.players.find((p) => p.id === match.teamA.unseededId)
+        ].filter(Boolean);
+        const teamBPlayers = [
+          state.players.find((p) => p.id === match.teamB.seededId),
+          state.players.find((p) => p.id === match.teamB.unseededId)
+        ].filter(Boolean);
+
+        if (teamAPlayers.length !== 2 || teamBPlayers.length !== 2) {
+          continue;
         }
 
+        let resultText = '';
+
+        if (result.value === 'A') {
+          teamAPlayers.forEach((player) => applyResult(player, 'WIN'));
+          teamBPlayers.forEach((player) => applyResult(player, 'LOSS'));
+          resultText = `<span class="tag">Sieger: ${teamAPlayers[0].name} & ${teamAPlayers[1].name}</span>`;
+        } else if (result.value === 'B') {
+          teamBPlayers.forEach((player) => applyResult(player, 'WIN'));
+          teamAPlayers.forEach((player) => applyResult(player, 'LOSS'));
+          resultText = `<span class="tag">Sieger: ${teamBPlayers[0].name} & ${teamBPlayers[1].name}</span>`;
+        } else {
+          teamAPlayers.forEach((player) => applyResult(player, 'DRAW'));
+          teamBPlayers.forEach((player) => applyResult(player, 'DRAW'));
+          resultText = `<span class="tag" style="background: rgba(249, 115, 22, 0.15); color:#c2410c;">Unentschieden</span>`;
+        }
+
+        incrementPairCount(match.teamA.seededId, match.teamA.unseededId);
+        incrementPairCount(match.teamB.seededId, match.teamB.unseededId);
+
+        roundRecord.matches.push({
+          teamA: teamAPlayers.map((player) => player.name),
+          teamB: teamBPlayers.map((player) => player.name),
+          resultText
+        });
       }
 
-      if (state.bye.length) {
-        winners.push(...state.bye);
-      }
+      byes.forEach((player) => {
+        applyResult(player, 'BYE');
+      });
 
-      state.history.push(roundSummary);
-      state.participants = winners;
-      state.matches = [];
-      state.bye = [];
-      clearAllTimers();
+      state.history.push(roundRecord);
+      state.currentRound = null;
 
-      renderParticipants();
-      updateStatus();
+      matchesForm.reset();
       renderMatches();
+      renderStandings();
       renderHistory();
-      renderChampion();
+      updateControls();
+    };
+
+    const resetTournament = () => {
+      if (!confirm('Turnier wirklich zurücksetzen?')) {
+        return;
+      }
+      state.players = [];
+      state.nextId = 1;
+      state.currentRound = null;
+      state.history = [];
+      state.pairCounts = new Map();
+      playerForm.reset();
+      renderPlayers();
+      renderMatches();
+      renderStandings();
+      renderHistory();
+      updateControls();
     };
 
     playerForm.addEventListener('submit', (event) => {
       event.preventDefault();
       const name = playerInput.value.trim();
-      if (!name) {
-        return;
-      }
-      state.participants.push(createParticipant(name));
+      const seeded = seededInput.checked;
+      if (!name) return;
+
+      state.players.push(createPlayer(name, seeded));
       playerInput.value = '';
-      renderParticipants();
-      updateStatus();
+      seededInput.checked = false;
+      renderPlayers();
+      renderStandings();
+      updateControls();
     });
 
-    startRoundBtn.addEventListener('click', startRound);
+    generateRoundBtn.addEventListener('click', generateRound);
     matchesForm.addEventListener('submit', processResults);
-    resetBtn.addEventListener('click', () => {
-      if (confirm('Turnier wirklich zurücksetzen?')) {
-        resetTournament();
-      }
-    });
+    resetBtn.addEventListener('click', resetTournament);
 
-    renderParticipants();
-    updateStatus();
-    renderMatches();
+    renderPlayers();
+    updateControls();
+    renderStandings();
     renderHistory();
   </script>
 </body>
-
 </html>
