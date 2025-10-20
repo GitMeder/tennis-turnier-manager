@@ -224,6 +224,16 @@
       letter-spacing: 0.02em;
     }
 
+    .score-tag {
+      background: rgba(22, 163, 74, 0.12);
+      color: #166534;
+    }
+
+    .tag-draw {
+      background: rgba(249, 115, 22, 0.15);
+      color: #c2410c;
+    }
+
     .action-bar {
       display: flex;
       flex-wrap: wrap;
@@ -274,6 +284,34 @@
 
     .option input[type="radio"] {
       accent-color: var(--primary);
+    }
+
+    .score-inputs {
+      display: grid;
+      gap: 0.6rem;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .score-input {
+      display: grid;
+      gap: 0.35rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .score-input input {
+      padding: 0.55rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(248, 250, 252, 0.9);
+      font-size: 1rem;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .score-input input:focus {
+      outline: none;
+      border-color: rgba(37, 99, 235, 0.6);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
     fieldset.match {
@@ -558,7 +596,8 @@
       nextId: 1,
       currentRound: null,
       history: [],
-      pairCounts: new Map()
+      pairCounts: new Map(),
+      lastByeIds: []
     };
 
     const playerForm = document.getElementById('playerForm');
@@ -600,6 +639,27 @@
       target.set(key, (target.get(key) || 0) + 1);
     };
 
+    const selectPlayersForBye = (pool, count) => {
+      if (!count || !pool.length) return [];
+      const lastByeSet = new Set(state.lastByeIds || []);
+      const decorated = pool.map((player) => ({
+        player,
+        wasLastBye: lastByeSet.has(player.id) ? 1 : 0,
+        byeCount: player.stats?.byes || 0,
+        rand: Math.random()
+      }));
+
+      decorated.sort((a, b) => {
+        if (a.wasLastBye !== b.wasLastBye) return a.wasLastBye - b.wasLastBye;
+        if (a.byeCount !== b.byeCount) return a.byeCount - b.byeCount;
+        return a.rand - b.rand;
+      });
+
+      return decorated
+        .slice(0, Math.min(count, decorated.length))
+        .map((entry) => entry.player);
+    };
+
     const showStatus = (message) => {
       const toast = document.createElement('div');
       toast.textContent = message;
@@ -630,7 +690,8 @@
       nextId: state.nextId,
       currentRound: state.currentRound,
       history: state.history,
-      pairCounts: Array.from(state.pairCounts.entries())
+      pairCounts: Array.from(state.pairCounts.entries()),
+      lastByeIds: state.lastByeIds
     });
 
     const hydrateState = (data) => {
@@ -639,6 +700,77 @@
       state.currentRound = data.currentRound || null;
       state.history = data.history || [];
       state.pairCounts = new Map(data.pairCounts || []);
+      state.lastByeIds = data.lastByeIds || [];
+
+      const playerById = new Map(state.players.map((player) => [player.id, player]));
+      const byeCountLookup = new Map();
+      (state.history || []).forEach((round) => {
+        if (round && Array.isArray(round.byeIds)) {
+          round.byeIds.forEach((id) => {
+            if (typeof id === 'number') {
+              const key = `id-${id}`;
+              byeCountLookup.set(key, (byeCountLookup.get(key) || 0) + 1);
+            }
+          });
+        } else if (round && Array.isArray(round.byes)) {
+          round.byes.forEach((name) => {
+            if (typeof name === 'string' && name) {
+              const key = `name-${name}`;
+              byeCountLookup.set(key, (byeCountLookup.get(key) || 0) + 1);
+            }
+          });
+        }
+      });
+
+      state.players.forEach((player) => {
+        player.stats = player.stats || {};
+        if (typeof player.stats.points !== 'number') player.stats.points = 0;
+        if (typeof player.stats.wins !== 'number') player.stats.wins = 0;
+        if (typeof player.stats.losses !== 'number') player.stats.losses = 0;
+        if (typeof player.stats.draws !== 'number') player.stats.draws = 0;
+        if (typeof player.stats.scoreDiff !== 'number') {
+          const fallbackDiff = (player.stats.wins || 0) - (player.stats.losses || 0);
+          player.stats.scoreDiff = fallbackDiff;
+        }
+        if (typeof player.stats.byes !== 'number') {
+          const idKey = `id-${player.id}`;
+          const nameKey = `name-${player.name}`;
+          const fromId = byeCountLookup.get(idKey);
+          const fromName = byeCountLookup.get(nameKey);
+          player.stats.byes =
+            typeof fromId === 'number'
+              ? fromId
+              : typeof fromName === 'number'
+                ? fromName
+                : 0;
+        }
+      });
+
+      if (state.currentRound && Array.isArray(state.currentRound.byes)) {
+        state.currentRound.byes = state.currentRound.byes
+          .map((bye) => playerById.get(bye.id) || bye)
+          .filter(Boolean);
+      }
+
+      if ((!state.lastByeIds || !state.lastByeIds.length) && state.history.length) {
+        const lastRound = state.history[state.history.length - 1];
+        if (lastRound) {
+          let lastByeCandidates = [];
+          if (Array.isArray(lastRound.byeIds) && lastRound.byeIds.length) {
+            lastByeCandidates = lastRound.byeIds.filter((id) => typeof id === 'number');
+          } else if (Array.isArray(lastRound.byes) && lastRound.byes.length) {
+            lastByeCandidates = lastRound.byes
+              .map((name) => {
+                const player = state.players.find((p) => p.name === name);
+                return player ? player.id : null;
+              })
+              .filter((id) => id !== null);
+          }
+          if (lastByeCandidates.length) {
+            state.lastByeIds = lastByeCandidates;
+          }
+        }
+      }
     };
 
     const saveToCache = (silent = false) => {
@@ -680,11 +812,13 @@
         points: 0,
         wins: 0,
         losses: 0,
-        draws: 0
+        draws: 0,
+        scoreDiff: 0,
+        byes: 0
       }
     });
 
-    const formatDiff = (player) => player.stats.wins - player.stats.losses;
+    const getScoreDiff = (player) => player.stats.scoreDiff || 0;
 
     const renderPlayers = () => {
       playerList.innerHTML = '';
@@ -773,17 +907,20 @@
           return;
         }
 
+        const teamATitle = `${teamASeeded.name} & ${teamAUnseeded.name}`;
+        const teamBTitle = `${teamBSeeded.name} & ${teamBUnseeded.name}`;
+
         const legend = document.createElement('legend');
-        legend.textContent = `${teamASeeded.name} & ${teamAUnseeded.name} vs. ${teamBSeeded.name} & ${teamBUnseeded.name}`;
+        legend.textContent = `${teamATitle} vs. ${teamBTitle}`;
         fieldset.appendChild(legend);
 
         const optionWrapper = document.createElement('div');
         optionWrapper.className = 'option';
 
         const options = [
-          { value: 'A', label: `${teamASeeded.name} & ${teamAUnseeded.name} gewinnen` },
+          { value: 'A', label: `${teamATitle} gewinnen` },
           { value: 'DRAW', label: 'Unentschieden' },
-          { value: 'B', label: `${teamBSeeded.name} & ${teamBUnseeded.name} gewinnen` }
+          { value: 'B', label: `${teamBTitle} gewinnen` }
         ];
 
         options.forEach((option) => {
@@ -797,6 +934,35 @@
           optionWrapper.appendChild(label);
         });
         fieldset.appendChild(optionWrapper);
+
+        const scoreWrapper = document.createElement('div');
+        scoreWrapper.className = 'score-inputs';
+
+        const scoreALabel = document.createElement('label');
+        scoreALabel.className = 'score-input';
+        scoreALabel.innerHTML = `<span>Ergebnis ${teamATitle}</span>`;
+        const scoreAInput = document.createElement('input');
+        scoreAInput.type = 'number';
+        scoreAInput.name = `scoreA-${match.id}`;
+        scoreAInput.min = '0';
+        scoreAInput.placeholder = '0';
+        scoreAInput.inputMode = 'numeric';
+        scoreALabel.appendChild(scoreAInput);
+
+        const scoreBLabel = document.createElement('label');
+        scoreBLabel.className = 'score-input';
+        scoreBLabel.innerHTML = `<span>Ergebnis ${teamBTitle}</span>`;
+        const scoreBInput = document.createElement('input');
+        scoreBInput.type = 'number';
+        scoreBInput.name = `scoreB-${match.id}`;
+        scoreBInput.min = '0';
+        scoreBInput.placeholder = '0';
+        scoreBInput.inputMode = 'numeric';
+        scoreBLabel.appendChild(scoreBInput);
+
+        scoreWrapper.appendChild(scoreALabel);
+        scoreWrapper.appendChild(scoreBLabel);
+        fieldset.appendChild(scoreWrapper);
 
         matchesContainer.appendChild(fieldset);
       });
@@ -833,8 +999,8 @@
 
       const sorted = [...state.players].sort((a, b) => {
         if (b.stats.points !== a.stats.points) return b.stats.points - a.stats.points;
-        const diffB = formatDiff(b);
-        const diffA = formatDiff(a);
+        const diffB = getScoreDiff(b);
+        const diffA = getScoreDiff(a);
         if (diffB !== diffA) return diffB - diffA;
         if (b.stats.wins !== a.stats.wins) return b.stats.wins - a.stats.wins;
         return a.name.localeCompare(b.name, 'de');
@@ -844,12 +1010,15 @@
 
       sorted.forEach((player) => {
         const tr = document.createElement('tr');
+        const diffValue = getScoreDiff(player);
+        const diffDisplay = diffValue > 0 ? `+${diffValue}` : `${diffValue}`;
+
         tr.innerHTML = `
           <td>${player.name}${player.seeded ? ' <span class="tag" style="margin-left:6px;">gesetzt</span>' : ''}</td>
           <td>${player.stats.points}</td>
           <td>${player.stats.wins}</td>
           <td>${player.stats.losses}</td>
-          <td>${formatDiff(player)}</td>
+          <td>${diffDisplay}</td>
         `;
         standingsBody.appendChild(tr);
       });
@@ -924,6 +1093,29 @@
       const teams = [];
       const byes = [];
 
+      const assignByes = (pool, count) => {
+        if (!count) return;
+        const selected = selectPlayersForBye(pool, count);
+        selected.forEach((player) => {
+          const index = pool.findIndex((candidate) => candidate.id === player.id);
+          if (index !== -1) {
+            pool.splice(index, 1);
+          }
+          if (!byes.some((bye) => bye.id === player.id)) {
+            byes.push(player);
+          }
+        });
+      };
+
+      assignByes(seededPool, Math.max(0, seededPool.length - unseededPool.length));
+      assignByes(unseededPool, Math.max(0, unseededPool.length - seededPool.length));
+
+      let balancedTeams = Math.min(seededPool.length, unseededPool.length);
+      if (balancedTeams > 0 && balancedTeams % 2 === 1) {
+        assignByes(seededPool, 1);
+        assignByes(unseededPool, 1);
+      }
+
       while (seededPool.length && unseededPool.length) {
         const seeded = seededPool.shift();
         let bestIndex = 0;
@@ -941,10 +1133,6 @@
         teams.push({ seededId: seeded.id, unseededId: partner.id });
         incrementPairCount(seeded.id, partner.id, tempCounts);
       }
-
-      // verbleibende Spieler erhalten Freilos (keine gemischten Teams mehr möglich)
-      seededPool.forEach((player) => byes.push(player));
-      unseededPool.forEach((player) => byes.push(player));
 
       if (!teams.length) {
         alert('Es konnten keine gemischten Doppel-Teams gebildet werden. Füge weitere Spieler hinzu.');
@@ -964,15 +1152,6 @@
         });
       }
 
-      if (teamOrder.length % 2 === 1) {
-        const leftoverTeam = teamOrder[teamOrder.length - 1];
-        const leftoverPlayers = [
-          state.players.find((p) => p.id === leftoverTeam.seededId),
-          state.players.find((p) => p.id === leftoverTeam.unseededId)
-        ].filter(Boolean);
-        byes.push(...leftoverPlayers);
-      }
-
       if (!matches.length && byes.length) {
         alert('Durch die aktuelle Konstellation entsteht nur ein Freilos. Füge weitere Spieler hinzu.');
         return;
@@ -981,7 +1160,8 @@
       state.currentRound = {
         number: state.history.length + 1,
         matches,
-        byes
+        byes,
+        byeIds: byes.map((player) => player.id)
       };
 
       renderMatches();
@@ -989,7 +1169,9 @@
       saveToCache();
     };
 
-    const applyResult = (player, outcome) => {
+    const applyResult = (player, outcome, scoreDiffDelta = 0) => {
+      if (!player || !player.stats) return;
+
       if (outcome === 'WIN') {
         player.stats.points += 2;
         player.stats.wins += 1;
@@ -1000,7 +1182,14 @@
         player.stats.draws += 1;
       } else if (outcome === 'BYE') {
         player.stats.points += 2;
+        player.stats.byes = (player.stats.byes || 0) + 1;
       }
+
+      if (outcome !== 'BYE') {
+        player.stats.byes = player.stats.byes || 0;
+      }
+
+      player.stats.scoreDiff = (player.stats.scoreDiff || 0) + scoreDiffDelta;
     };
 
     const processResults = (event) => {
@@ -1009,18 +1198,51 @@
         return;
       }
 
-      const { matches, byes, number } = state.currentRound;
+      const { matches, byes, number, byeIds: storedByeIds } = state.currentRound;
+      const byeIdCandidates = Array.isArray(storedByeIds) && storedByeIds.length
+        ? storedByeIds.filter((id) => typeof id === 'number')
+        : byes
+            .map((player) => (player && typeof player.id === 'number' ? player.id : null))
+            .filter((id) => id !== null);
+      const byeIds = Array.from(new Set(byeIdCandidates));
 
       const roundRecord = {
         number,
         matches: [],
-        byes: byes.map((player) => player.name)
+        byes: byes.map((player) => player.name),
+        byeIds
       };
 
       for (const match of matches) {
         const result = matchesForm.querySelector(`input[name="match-${match.id}"]:checked`);
         if (!result) {
           alert('Bitte trage für jedes Match ein Ergebnis ein.');
+          return;
+        }
+
+        const scoreAInput = matchesForm.querySelector(`input[name="scoreA-${match.id}"]`);
+        const scoreBInput = matchesForm.querySelector(`input[name="scoreB-${match.id}"]`);
+
+        if (!scoreAInput || !scoreBInput) {
+          alert('Bitte gib für jedes Match einen vollständigen Spielstand ein.');
+          return;
+        }
+
+        const scoreA = Number.parseInt(scoreAInput.value, 10);
+        const scoreB = Number.parseInt(scoreBInput.value, 10);
+
+        if (
+          !Number.isFinite(scoreA) ||
+          !Number.isFinite(scoreB) ||
+          !Number.isInteger(scoreA) ||
+          !Number.isInteger(scoreB)
+        ) {
+          alert('Bitte gib für jedes Match einen gültigen Spielstand ein.');
+          return;
+        }
+
+        if (scoreA < 0 || scoreB < 0) {
+          alert('Negative Ergebnisse sind nicht erlaubt.');
           return;
         }
 
@@ -1037,20 +1259,38 @@
           continue;
         }
 
+        const scoreText = `${scoreA}:${scoreB}`;
         let resultText = '';
 
-        if (result.value === 'A') {
-          teamAPlayers.forEach((player) => applyResult(player, 'WIN'));
-          teamBPlayers.forEach((player) => applyResult(player, 'LOSS'));
-          resultText = `<span class="tag">Sieger: ${teamAPlayers[0].name} & ${teamAPlayers[1].name}</span>`;
+        if (result.value === 'DRAW') {
+          if (scoreA !== scoreB) {
+            alert('Bei einem Unentschieden müssen beide Teams die gleiche Spielzahl haben.');
+            return;
+          }
+          teamAPlayers.forEach((player) => applyResult(player, 'DRAW', 0));
+          teamBPlayers.forEach((player) => applyResult(player, 'DRAW', 0));
+          resultText = `<span class="tag score-tag">${scoreText}</span> <span class="tag tag-draw">Unentschieden</span>`;
+        } else if (result.value === 'A') {
+          if (scoreA <= scoreB) {
+            alert('Das Ergebnis passt nicht zum Siegerteam.');
+            return;
+          }
+          const diff = scoreA - scoreB;
+          teamAPlayers.forEach((player) => applyResult(player, 'WIN', diff));
+          teamBPlayers.forEach((player) => applyResult(player, 'LOSS', -diff));
+          resultText = `<span class="tag score-tag">${scoreText}</span> <span class="tag">Sieger: ${teamAPlayers[0].name} & ${teamAPlayers[1].name}</span>`;
         } else if (result.value === 'B') {
-          teamBPlayers.forEach((player) => applyResult(player, 'WIN'));
-          teamAPlayers.forEach((player) => applyResult(player, 'LOSS'));
-          resultText = `<span class="tag">Sieger: ${teamBPlayers[0].name} & ${teamBPlayers[1].name}</span>`;
+          if (scoreB <= scoreA) {
+            alert('Das Ergebnis passt nicht zum Siegerteam.');
+            return;
+          }
+          const diff = scoreA - scoreB;
+          teamBPlayers.forEach((player) => applyResult(player, 'WIN', -diff));
+          teamAPlayers.forEach((player) => applyResult(player, 'LOSS', diff));
+          resultText = `<span class="tag score-tag">${scoreText}</span> <span class="tag">Sieger: ${teamBPlayers[0].name} & ${teamBPlayers[1].name}</span>`;
         } else {
-          teamAPlayers.forEach((player) => applyResult(player, 'DRAW'));
-          teamBPlayers.forEach((player) => applyResult(player, 'DRAW'));
-          resultText = `<span class="tag" style="background: rgba(249, 115, 22, 0.15); color:#c2410c;">Unentschieden</span>`;
+          alert('Ungültiges Ergebnis.');
+          return;
         }
 
         incrementPairCount(match.teamA.seededId, match.teamA.unseededId);
@@ -1059,14 +1299,20 @@
         roundRecord.matches.push({
           teamA: teamAPlayers.map((player) => player.name),
           teamB: teamBPlayers.map((player) => player.name),
+          score: { teamA: scoreA, teamB: scoreB },
+          outcome: result.value,
           resultText
         });
       }
 
       byes.forEach((player) => {
-        applyResult(player, 'BYE');
+        const original = state.players.find((p) => p.id === player.id);
+        if (original) {
+          applyResult(original, 'BYE', 0);
+        }
       });
 
+      state.lastByeIds = byeIds;
       state.history.push(roundRecord);
       state.currentRound = null;
 
@@ -1087,6 +1333,7 @@
       state.currentRound = null;
       state.history = [];
       state.pairCounts = new Map();
+      state.lastByeIds = [];
       playerForm.reset();
       renderPlayers();
       renderMatches();
