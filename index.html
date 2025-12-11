@@ -169,6 +169,12 @@
       border: 1px solid rgba(37, 99, 235, 0.25);
     }
 
+    button.secondary.confirming {
+      background: rgba(249, 115, 22, 0.2);
+      border-color: rgba(249, 115, 22, 0.5);
+      color: #b45309;
+    }
+
     button:focus-visible {
       outline: none;
       box-shadow: 0 0 0 4px var(--primary-soft);
@@ -617,6 +623,9 @@
 
     const standingsBody = document.getElementById('standingsBody');
     const historyContainer = document.getElementById('history');
+    const defaultReshuffleLabel = reshuffleBtn ? reshuffleBtn.textContent.trim() : '';
+    let reshuffleConfirmTimer = null;
+    let reshuffleConfirmArmed = false;
 
     const shuffle = (array) => {
       const copy = [...array];
@@ -685,6 +694,39 @@
         toast.style.opacity = '0';
         toast.addEventListener('transitionend', () => toast.remove(), { once: true });
       }, 1500);
+    };
+
+    const resetReshuffleConfirm = () => {
+      if (!reshuffleBtn) return;
+      reshuffleConfirmArmed = false;
+      if (reshuffleConfirmTimer) {
+        clearTimeout(reshuffleConfirmTimer);
+        reshuffleConfirmTimer = null;
+      }
+      reshuffleBtn.classList.remove('confirming');
+      reshuffleBtn.textContent = defaultReshuffleLabel || 'Auslosung neu mischen';
+    };
+
+    const shouldUseNativeConfirm = () => {
+      if (typeof window === 'undefined' || typeof window.confirm !== 'function') {
+        return false;
+      }
+      if (!window.matchMedia) return true;
+      return !window.matchMedia('(pointer: coarse)').matches;
+    };
+
+    const requestTouchConfirm = () => {
+      if (!reshuffleBtn) return;
+      reshuffleConfirmArmed = true;
+      reshuffleBtn.classList.add('confirming');
+      reshuffleBtn.textContent = 'Neu mischen bestätigen';
+      showStatus('Tippe erneut zum Bestätigen');
+      if (reshuffleConfirmTimer) {
+        clearTimeout(reshuffleConfirmTimer);
+      }
+      reshuffleConfirmTimer = window.setTimeout(() => {
+        resetReshuffleConfirm();
+      }, 2800);
     };
 
     const serializeState = () => ({
@@ -882,6 +924,7 @@
 
     const renderMatches = () => {
       matchesContainer.innerHTML = '';
+      resetReshuffleConfirm();
 
       if (!state.currentRound) {
         matchesContainer.innerHTML = `
@@ -1187,8 +1230,16 @@
         return;
       }
 
-      if (!confirm('Aktuelle Auslosung verwerfen und neu mischen? Bereits eingetragene Ergebnisse gehen verloren.')) {
+      const confirmMessage = 'Aktuelle Auslosung verwerfen und neu mischen? Bereits eingetragene Ergebnisse gehen verloren.';
+      if (shouldUseNativeConfirm()) {
+        if (!window.confirm(confirmMessage)) {
+          return;
+        }
+      } else if (!reshuffleConfirmArmed) {
+        requestTouchConfirm();
         return;
+      } else {
+        resetReshuffleConfirm();
       }
 
       const nextRound = buildRoundDefinition();
