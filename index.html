@@ -550,6 +550,7 @@
         </div>
         <div class="action-bar" id="submitWrapper" style="display:none;">
           <button type="submit">Ergebnisse übernehmen</button>
+          <button type="button" id="reshuffleBtn" class="secondary">Auslosung neu mischen</button>
         </div>
       </form>
     </section>
@@ -612,6 +613,7 @@
     const matchesForm = document.getElementById('matchesForm');
     const matchesContainer = document.getElementById('matchesContainer');
     const submitWrapper = document.getElementById('submitWrapper');
+    const reshuffleBtn = document.getElementById('reshuffleBtn');
 
     const standingsBody = document.getElementById('standingsBody');
     const historyContainer = document.getElementById('history');
@@ -1071,14 +1073,10 @@
       });
     };
 
-    const generateRound = () => {
-      if (state.currentRound) {
-        alert('Bitte beende zuerst die aktuelle Runde.');
-        return;
-      }
+    const buildRoundDefinition = () => {
       if (state.players.length < 4) {
         alert('Für Doppel werden mindestens vier Spieler (jeweils gesetzt und ungesetzt) benötigt.');
-        return;
+        return null;
       }
 
       const seededPool = shuffle(state.players.filter((p) => p.seeded));
@@ -1086,7 +1084,7 @@
 
       if (!seededPool.length || !unseededPool.length) {
         alert('Es werden sowohl gesetzte als auch ungesetzte Spieler benötigt, um eine Doppelrunde zu erstellen.');
-        return;
+        return null;
       }
 
       const tempCounts = new Map(state.pairCounts);
@@ -1136,7 +1134,7 @@
 
       if (!teams.length) {
         alert('Es konnten keine gemischten Doppel-Teams gebildet werden. Füge weitere Spieler hinzu.');
-        return;
+        return null;
       }
 
       const teamOrder = shuffle(teams);
@@ -1154,19 +1152,56 @@
 
       if (!matches.length && byes.length) {
         alert('Durch die aktuelle Konstellation entsteht nur ein Freilos. Füge weitere Spieler hinzu.');
-        return;
+        return null;
       }
 
-      state.currentRound = {
+      return {
         number: state.history.length + 1,
         matches,
         byes,
         byeIds: byes.map((player) => player.id)
       };
+    };
 
+    const generateRound = () => {
+      if (state.currentRound) {
+        alert('Bitte beende zuerst die aktuelle Runde.');
+        return;
+      }
+
+      const nextRound = buildRoundDefinition();
+      if (!nextRound) {
+        return;
+      }
+
+      state.currentRound = nextRound;
+      matchesForm.reset();
       renderMatches();
       updateControls();
       saveToCache();
+    };
+
+    const reshuffleRound = () => {
+      if (!state.currentRound) {
+        alert('Es gibt aktuell keine Runde, die neu ausgelost werden kann.');
+        return;
+      }
+
+      if (!confirm('Aktuelle Auslosung verwerfen und neu mischen? Bereits eingetragene Ergebnisse gehen verloren.')) {
+        return;
+      }
+
+      const nextRound = buildRoundDefinition();
+      if (!nextRound) {
+        return;
+      }
+
+      state.currentRound = nextRound;
+      matchesForm.reset();
+      renderMatches();
+      updateControls();
+      saveToCache();
+      showStatus('🔀 Auslosung neu gemischt');
     };
 
     const applyResult = (player, outcome, scoreDiffDelta = 0) => {
@@ -1360,6 +1395,9 @@
     });
 
     generateRoundBtn.addEventListener('click', generateRound);
+    if (reshuffleBtn) {
+      reshuffleBtn.addEventListener('click', reshuffleRound);
+    }
     matchesForm.addEventListener('submit', processResults);
     resetBtn.addEventListener('click', resetTournament);
 
